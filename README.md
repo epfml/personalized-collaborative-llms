@@ -1,6 +1,6 @@
 # Personalized collaborative fine-tuning for LLMs
 
-This is the code base for the paper [Personalized Collaborative Fine-Tuning for On-Device Large Language Model](shttps://arxiv.org/abs/2404.09753)
+This is the code base for the paper [Personalized Collaborative Fine-Tuning for On-Device Large Language Models](https://arxiv.org/abs/2404.09753)
 
 ## Quickstart
 
