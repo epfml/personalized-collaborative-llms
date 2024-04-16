@@ -1,6 +1,6 @@
 # Personalized collaborative fine-tuning for LLMs
 
-A codebase to experiment with different ways to aggregate LLMs during personalized collaborative fine-tuning.
+This is the code base for the paper [Personalized Collaborative Fine-Tuning for On-Device Large Language Model](shttps://arxiv.org/abs/2404.09753)
 
 ## Quickstart
 
