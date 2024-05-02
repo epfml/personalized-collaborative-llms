@@ -12,7 +12,7 @@ from torch import Tensor
 from .utils import eval, get_batch
 
 
-def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length, eval_freq, ckpt_path,
+def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length, eval_freq,
                distributed_backend, extra_args):
     device_type = 'cuda' if 'cuda' in str(extra_args.device) else 'cpu'
     type_ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(
@@ -88,7 +88,6 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
                 for model, _, _ in clients:
                     model.train()
                 res = -res
-                print(res)
                 if extra_args.trust == 'dynamic-ref':
                     __average_dynamic_ref(clients, res)
                 elif extra_args.trust == 'dynamic-thresh-ref':
@@ -123,7 +122,6 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
 
                 res = F.normalize(res, p=1, dim=1)
                 res = -res * 10
-                print(res)
                 if extra_args.trust == 'dynamic-token':
                     __average_dynamic_token(clients, res)
                 elif extra_args.trust == 'dynamic-thresh-token':

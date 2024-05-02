@@ -5,10 +5,13 @@ References:
 https://github.com/openai/gpt-2/blob/master/src/model.py
 2) huggingface/transformers PyTorch implementation:
 https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
+
+And LoRA's implementation is inspired by:
+https://github.com/microsoft/LoRA/blob/main/loralib/layers.py
 """
-import math
 from argparse import Namespace
 
+import math
 import tiktoken
 import torch
 import torch.nn as nn
@@ -19,6 +22,7 @@ from transformers import GPT2LMHeadModel
 
 
 def lora_model(model: nn.Module, lora_freeze_all_non_lora: bool, lora_allow_embedding: bool) -> None:
+    """ Freeze the correct parameters of the model """
     if lora_freeze_all_non_lora:
         for name, param in model.named_parameters():
             if 'lora' in name or (lora_allow_embedding and ('wte' in name or 'wpe' in name)):
@@ -35,7 +39,6 @@ def lora_model(model: nn.Module, lora_freeze_all_non_lora: bool, lora_allow_embe
                         param.requires_grad = True
 
 
-# inspired https://github.com/microsoft/LoRA/blob/main/loralib/layers.py
 class LoRALinear(nn.Linear):
 
     def __init__(self, in_features: int, out_features: int,

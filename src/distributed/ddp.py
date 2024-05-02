@@ -1,7 +1,7 @@
-import math
 import os
 from contextlib import contextmanager
 
+import math
 from torch.distributed import init_process_group, destroy_process_group, get_world_size
 from torch.nn.parallel import DistributedDataParallel as DDP
 

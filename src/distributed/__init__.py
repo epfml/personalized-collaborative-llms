@@ -3,7 +3,7 @@ from . import single
 
 BACKEND_TYPE_TO_MODULE_MAP = {
     "nccl": ddp.DataParallelDistributedBackend,
-    None: single.SinlgeNodeBackend,
+    None: single.SingleNodeBackend,
 }
 
 

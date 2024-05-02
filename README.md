@@ -1,6 +1,7 @@
 # Personalized collaborative fine-tuning for LLMs
 
-This is the code base for the paper [Personalized Collaborative Fine-Tuning for On-Device Large Language Models](https://arxiv.org/abs/2404.09753)
+This is the code base for the
+paper [Personalized Collaborative Fine-Tuning for On-Device Large Language Models](https://arxiv.org/abs/2404.09753)
 
 ## Quickstart
 
@@ -29,13 +30,64 @@ python ./src/main.py --config_format lora --use_pretrained gpt2 \
 --trust <trust> --dataset=<dataset_name> --num_clients <num_clients>
 ```
 
-### Scripts
+### Reproducibility
 
-To reproduce some of the experiments you can run the following command (this might take a while to run):
+To reproduce the experiments you can run the following commands. There are several point to take note of:
+
+1. This might take a while to run, because we run the experiments with 10 different seeds.
+2. There two variants to the datasets.
+3. For clearer visualisation on wandb, we used a different project for each dataset.
+
+#### AG News
+
+News articles in four categories: “World”, “Sports”, “Business” and “Sci/Tech”.
 
 ```
 ./scripts/script.sh <wandb_project> <dataset_name> <trust> <num_clients>
 ```
 
+#### Multilingual Wikipedia
 
+Wikipedia texts in three languages (categories): French, Italian, and German.
 
+```
+./scripts/script.sh <wandb_project> <dataset_name> <trust> <num_clients>
+```
+
+#### Codes-Wikipedia (Eng)
+
+The first category is Java code from GitHub (HuggingFace) and the second category is English Wikipedia text
+
+```
+./scripts/script.sh <wandb_project> <dataset_name> <trust> <num_clients>
+```
+
+## Code structure
+
+```
+src                              # Main source folder                                                                                                                                                                                                                                                               
+├── config                         # Config files for differents models
+│   ├── __init__.py                # Chooses the correct config
+│   └── lora.py                    # Configuration parameters for LoRA models
+├── data                          # Datasets folder
+│   ├── agnews_mixed.py            #
+│   ├── agnews_specific.py         #
+│   ├── fed_cc_news.py             #
+│   ├── github_wiki_mixed.py       #
+│   ├── github_wiki_specific.py    #
+│   ├── split_wikitext.py          #
+│   ├── three_multi_mixed.py       #
+│   ├── three_multi_specific.py    #
+│   ├── utils.py                   # Get the correct dataset from the configuration parameters
+│   └── wikitext.py                #
+├── distributed                   # Distributed package to run experiments on multiple GPU, NOT used in our experiments
+│   └── ...                        # Only the default, single backend is used
+├── gen_dataset.py                 # Allows to generate only datasets
+├── main.py                        #
+├── models                        # Models definition
+│   ├── lora.py                    # LoRA nano-GPT model definition
+│   └── utils.py                   # Get the correct model from the configuration parameters
+└── optim                         # Training/Fine-tuning loop for the models 
+    ├── lora.py                    # Loop for LoRA model
+    └── utils.py                   # General useful methods
+```

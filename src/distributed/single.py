@@ -3,7 +3,7 @@ from contextlib import nullcontext
 from .backend import DistributedBackend
 
 
-class SinlgeNodeBackend(DistributedBackend):
+class SingleNodeBackend(DistributedBackend):
 
     def transform_model(self, model):
         return model
