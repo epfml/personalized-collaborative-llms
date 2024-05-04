@@ -5,7 +5,7 @@ import numpy as np
 import tiktoken
 from datasets import load_from_disk, load_dataset
 
-from utils import WIKI_PATH_DE, WIKI_PATH_IT, WIKI_PATH_FR
+from .utils import WIKI_PATH_DE, WIKI_PATH_IT, WIKI_PATH_FR
 
 TOKENIZER = tiktoken.get_encoding("gpt2")
 MAX_NUM_CLIENTS = 20

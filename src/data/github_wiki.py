@@ -6,7 +6,7 @@ import numpy as np
 import tiktoken
 from datasets import load_from_disk, load_dataset
 
-from utils import WIKI_PATH_EN
+from .utils import WIKI_PATH_EN
 
 TOKENIZER = tiktoken.get_encoding("gpt2")
 GIT_DATASET_LOADER = iter(

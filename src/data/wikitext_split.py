@@ -5,7 +5,7 @@ import numpy as np
 import tiktoken
 from datasets import load_from_disk, load_dataset
 
-from utils import WIKI_PATH_EN, WIKI_PATH_DE, WIKI_PATH_FR, WIKI_PATH_IT
+from .utils import WIKI_PATH_EN, WIKI_PATH_DE, WIKI_PATH_FR, WIKI_PATH_IT
 
 SPLIT_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/split_wiki/")
 MAX_TRAIN_TOKEN = 84000000
