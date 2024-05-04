@@ -3,15 +3,14 @@ from typing import Dict, List
 
 import numpy as np
 
-WIKI_PATH_EN = os.path.join(os.path.dirname(__file__), "wikipedia/en")
-WIKI_PATH_FR = os.path.join(os.path.dirname(__file__), "wikipedia/fr")
-WIKI_PATH_IT = os.path.join(os.path.dirname(__file__), "wikipedia/it")
-WIKI_PATH_DE = os.path.join(os.path.dirname(__file__), "wikipedia/de")
+WIKI_PATH_EN = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.en")
+WIKI_PATH_FR = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.fr")
+WIKI_PATH_IT = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.it")
+WIKI_PATH_DE = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.de")
 
 from .agnews import get_agnews_data
 from .fed_cc_news import get_fed_cc_news
-from .github_wiki_mixed import get_github_wikitext_data_mixed
-from .github_wiki_specific import get_github_wikitext_data_specific
+from .github_wiki import get_github_wikitext_data
 from .wikitext_split import get_split_multi_data
 from .three_multi import get_three_multi_data
 from .wikitext import get_wikitext_data
@@ -20,7 +19,8 @@ from .wikitext import get_wikitext_data
 def get_dataset(args) -> Dict[str, List[np.ndarray] | np.ndarray]:
     """ Fetch the right dataset given by the args.dataset parameter. The logic for each dataset is
      contained in its own python file. The expected format at the moment is a dictionary of np.memmap
-     containing two keys: "train" and "val", corresponding to the tokenized training and validation data. """
+     containing up to three keys: "train" and "val", and "ref", corresponding to the tokenized training,
+     validation and reference data. """
 
     if args.dataset == "fed_cc_news":
         return get_fed_cc_news()
@@ -34,9 +34,9 @@ def get_dataset(args) -> Dict[str, List[np.ndarray] | np.ndarray]:
     elif args.dataset == "three_multi_mixed":
         return get_three_multi_data("mixed")
     elif args.dataset == "github_wiki_specific":
-        return get_github_wikitext_data_specific()
+        return get_github_wikitext_data("specific")
     elif args.dataset == "github_wiki_mixed":
-        return get_github_wikitext_data_mixed()
+        return get_github_wikitext_data("mixed")
 
     elif args.dataset == "wikitext":
         return get_wikitext_data()

@@ -1,26 +1,27 @@
 import os
+from typing import Dict, List
 
 import numpy as np
 import tiktoken
-
 from datasets import load_from_disk, load_dataset
 
-num_clients = 20
-DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/fed_cc_news/{num_clients}/")
+MAX_NUM_CLIENTS = 20
+DATA_PATH = os.path.join(os.path.dirname(__file__), "datasets/fed_cc_news")
+DATASET_PATH = os.path.join(DATA_PATH, "cc_news")
 
 
-def get_fed_cc_news():
+def get_fed_cc_news() -> Dict[str, List[np.ndarray] | np.ndarray]:
     if not os.path.exists(DATA_PATH):
         os.makedirs(DATA_PATH)
 
         print('This data downloading process might take a while... be patient.')
         name = 'cc_news'
-        if os.path.isdir(name):
+        if os.path.isdir(DATASET_PATH):
             print('loading from disk: ', name)
-            dataset = load_from_disk(name)
+            dataset = load_from_disk(DATASET_PATH)
         else:
             dataset = load_dataset(name, split='train')
-            dataset.save_to_disk(name)
+            dataset.save_to_disk(DATASET_PATH)
 
         df = dataset.to_pandas()[['domain', 'text']]
         del dataset
@@ -64,7 +65,7 @@ def get_fed_cc_news():
     train_data = []
     val_data = []
 
-    for i in range(num_clients):
+    for i in range(MAX_NUM_CLIENTS):
         train_data.append(np.memmap(os.path.join(DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(np.memmap(os.path.join(DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
 

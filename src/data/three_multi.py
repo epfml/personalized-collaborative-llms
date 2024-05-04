@@ -11,7 +11,7 @@ TOKENIZER = tiktoken.get_encoding("gpt2")
 MAX_NUM_CLIENTS = 20
 NUM_CATEGORIES = 3
 
-MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), "datasets/three_multi_mixed/")
+MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), "datasets/three_multi/")
 MULTI_MIXED_DATA_PATH = os.path.join(MULTI_DATA_PATH, "mixed")
 MULTI_SPECIFIC_DATA_PATH = os.path.join(MULTI_DATA_PATH, "specific")
 
