@@ -37,6 +37,7 @@ To reproduce the experiments you can run the following commands. There are sever
 1. This might take a while to run, because we run the experiments with 10 different seeds.
 2. There two variants to the datasets.
 3. For clearer visualisation on wandb, we used a different project for each dataset.
+4. The number of clients used can be changed but there is a specific range for each dataset.
 
 #### AG News
 

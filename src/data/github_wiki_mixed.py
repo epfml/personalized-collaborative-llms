@@ -5,6 +5,9 @@ import numpy as np
 import tiktoken
 from datasets import load_from_disk, load_dataset
 
+
+WIKI_PATH_EN = os.path.join(os.path.dirname(__file__), "wikipedia/en")
+
 num_clients = 20
 MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/github_wikitext_mixed/{num_clients}")
 ds = load_dataset("codeparrot/github-code-clean", streaming=True, split="train", languages=["Java"])
