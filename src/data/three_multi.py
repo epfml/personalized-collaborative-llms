@@ -77,7 +77,7 @@ def save_mixed_data(train_data: List[str], val_data: List[str], path: str) -> No
         save_raw_token(raw_tokenized_val, os.path.join(path, f"val_{i}.bin"))
 
 
-def save_train_val_data(dist: str, train_text_per_class: List[str], val_text_per_class: List[str]) -> int:
+def save_train_val_data(dist: str, train_text_per_class: List[str], val_text_per_class: List[str], path: str) -> int:
     match dist:
         case "mixed":
             iters = MAX_NUM_CLIENTS * 2
@@ -100,9 +100,9 @@ def save_train_val_data(dist: str, train_text_per_class: List[str], val_text_per
 
     match dist:
         case "mixed":
-            save_mixed_data(train_data, val_data)
+            save_mixed_data(train_data, val_data, path)
         case "specific":
-            save_specific_data(train_data, val_data)
+            save_specific_data(train_data, val_data, path)
         case _:
             raise NotImplementedError(f"{dist} is not implemented")
 
@@ -149,7 +149,7 @@ def get_three_multi_data(dist: str) -> Dict[str, List[np.ndarray] | np.ndarray]:
 
         del dataset_text, sampled_indices
 
-        end = save_train_val_data(dist, train_text_per_class, val_text_per_class)
+        end = save_train_val_data(dist, train_text_per_class, val_text_per_class, DATA_PATH)
         save_ref_data(DATA_PATH, [val_text_per_class[i][end:] for i in range(NUM_CATEGORIES)])
 
         print("completed the tokenization process!")
