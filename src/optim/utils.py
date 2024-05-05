@@ -19,7 +19,7 @@ def get_batch(data: np.ndarray, seq_length: int, batch_size: int, device: str = 
 
 
 @torch.no_grad()
-def eval(model: nn.Module, data_tensor: Tensor, sequence_length: int, batch_size: int, device: str = 'cpu',
+def eval(model: nn.Module, data_tensor: np.ndarray, sequence_length: int, batch_size: int, device: str = 'cpu',
          max_num_batches: int = 24, ctx: Union[nullcontext, autocast] = nullcontext()) -> Tuple[float, float, float]:
     assert model.training == False
 

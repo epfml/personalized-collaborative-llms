@@ -5,8 +5,6 @@ import numpy as np
 import tiktoken
 from datasets import load_from_disk, load_dataset
 
-from .utils import WIKI_PATH_DE, WIKI_PATH_IT, WIKI_PATH_FR
-
 TOKENIZER = tiktoken.get_encoding("gpt2")
 MAX_NUM_CLIENTS = 20
 NUM_CATEGORIES = 3
@@ -123,6 +121,7 @@ def get_three_multi_data(dist: str) -> Dict[str, List[np.ndarray] | np.ndarray]:
         print("This data downloading process might take a while... be patient.")
         dataset_text = []
 
+        from .utils import WIKI_PATH_DE, WIKI_PATH_IT, WIKI_PATH_FR
         for dataset_idx, dataset_path in zip(["20220301.de", "20220301.it", "20220301.fr"],
                                              [WIKI_PATH_DE, WIKI_PATH_IT, WIKI_PATH_FR]):
             if os.path.isdir(dataset_path):
