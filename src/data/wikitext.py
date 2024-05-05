@@ -1,4 +1,5 @@
 import os
+import subprocess
 import urllib
 import zipfile
 from typing import List, Dict
@@ -14,8 +15,8 @@ def get_wikitext_data() -> Dict[str, List[np.ndarray]]:
     if not os.path.exists(WIKITEXT_DATA_PATH):
         os.makedirs(WIKITEXT_DATA_PATH, exist_ok=True)
         print("downloading data and tokenizing (1-2 min)")
-        raw_data_source = "https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-103-raw-v1.zip"
-        urllib.request.urlretrieve(raw_data_source, os.path.join(WIKITEXT_DATA_PATH, "data.zip"))
+        raw_data_source = "https://wikitext.smerity.com/wikitext-103-raw-v1.zip"
+        subprocess.run(["wget", raw_data_source, "-O", os.path.join(WIKITEXT_DATA_PATH, "data.zip")], stdout=subprocess.PIPE)
 
         with zipfile.ZipFile(os.path.join(WIKITEXT_DATA_PATH, "data.zip"), "r") as zip_ref:
             zip_ref.extractall(WIKITEXT_DATA_PATH)
