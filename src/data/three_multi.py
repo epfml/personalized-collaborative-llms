@@ -150,6 +150,8 @@ def get_three_multi_data(dist: str) -> Dict[str, List[np.ndarray] | np.ndarray]:
         del dataset_text, sampled_indices
 
         end = save_train_val_data(dist, train_text_per_class, val_text_per_class, DATA_PATH)
+        print(end)
+        print([len(val_text_per_class[i][end:]) for i in range(NUM_CATEGORIES)])
         save_ref_data(DATA_PATH, [val_text_per_class[i][end:] for i in range(NUM_CATEGORIES)])
 
         print("completed the tokenization process!")
