@@ -9,9 +9,10 @@ https://github.com/huggingface/transformers/blob/main/src/transformers/models/gp
 And LoRA's implementation is inspired by:
 https://github.com/microsoft/LoRA/blob/main/loralib/layers.py
 """
-from argparse import Namespace
-
 import math
+from argparse import Namespace
+from typing import Union, Dict, List, Any
+
 import tiktoken
 import torch
 import torch.nn as nn
@@ -93,7 +94,7 @@ class LoRALinear(nn.Linear):
 class LayerNorm(nn.Module):
     """ LayerNorm but with an optional bias. PyTorch doesn't support simply bias=False """
 
-    def __init__(self, ndim, bias):
+    def __init__(self, ndim: int, bias: bool) -> None:
         super().__init__()
         self.weight = nn.Parameter(torch.ones(ndim))
         self.bias = nn.Parameter(torch.zeros(ndim)) if bias else None
@@ -104,7 +105,7 @@ class LayerNorm(nn.Module):
 
 class CausalSelfAttention(nn.Module):
 
-    def __init__(self, config):
+    def __init__(self, config: Namespace) -> None:
         super().__init__()
         assert config.n_embd % config.n_head == 0
         if config.lora_causal_self_attention:
@@ -140,7 +141,7 @@ class CausalSelfAttention(nn.Module):
             self.register_buffer("bias", torch.tril(torch.ones(config.sequence_length, config.sequence_length))
                                  .view(1, 1, config.sequence_length, config.sequence_length))
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         B, T, C = x.size()  # batch size, sequence length, embedding dimensionality (n_embd)
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
@@ -170,7 +171,7 @@ class CausalSelfAttention(nn.Module):
 
 class MLP(nn.Module):
 
-    def __init__(self, config):
+    def __init__(self, config: Namespace) -> None:
         super().__init__()
         if config.lora_mlp:
             self.c_fc = LoRALinear(config.n_embd, 4 * config.n_embd, bias=config.bias,
@@ -187,7 +188,7 @@ class MLP(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
         self.activation = nn.GELU()
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         x = self.c_fc(x)
         x = self.activation(x)
         x = self.c_proj(x)
@@ -197,14 +198,14 @@ class MLP(nn.Module):
 
 class Block(nn.Module):
 
-    def __init__(self, config):
+    def __init__(self, config: Namespace) -> None:
         super().__init__()
         self.ln_1 = LayerNorm(config.n_embd, bias=config.bias)
         self.attn = CausalSelfAttention(config)
         self.ln_2 = LayerNorm(config.n_embd, bias=config.bias)
         self.mlp = MLP(config)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
         return x
@@ -212,7 +213,7 @@ class Block(nn.Module):
 
 class GPTLoRA(nn.Module):
 
-    def __init__(self, config):
+    def __init__(self, config: Namespace) -> None:
         super().__init__()
         assert config.vocab_size is not None
         assert config.sequence_length is not None
@@ -252,7 +253,7 @@ class GPTLoRA(nn.Module):
         print("number of trainable parameters: %.2fM" % (
             self.get_num_params(only_trainable=True) / 1e6,))
 
-    def get_num_params(self, only_trainable=False):
+    def get_num_params(self, only_trainable: bool = False) -> int:
         """
         Return the number of parameters in the model.
         For non-embedding count (default), the position embeddings get subtracted.
@@ -265,7 +266,7 @@ class GPTLoRA(nn.Module):
             n_params = sum(p.numel() if not 'lora' in n else 0 for n, p in self.named_parameters())
         return n_params
 
-    def _init_weights(self, module):
+    def _init_weights(self, module: Union[nn.Linear, nn.Embedding]) -> None:
         if isinstance(module, nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
             if module.bias is not None:
@@ -273,7 +274,7 @@ class GPTLoRA(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, idx, targets=None, get_logits=False):
+    def forward(self, idx: Tensor, targets: Tensor = None, get_logits: bool = False) -> Dict[str, Tensor]:
         device = idx.device
         b, t = idx.size()
         assert t <= self.config.sequence_length, f"Cannot forward sequence of length {t}, block size is only {self.config.sequence_length}"
@@ -298,7 +299,7 @@ class GPTLoRA(nn.Module):
         logits = logits if get_logits else None
         return {'logits': logits, 'loss': loss}
 
-    def crop_sequence_length(self, sequence_length):
+    def crop_sequence_length(self, sequence_length: int) -> None:
         # model surgery to decrease the block size if necessary
         # e.g. we may load the GPT2 pretrained model checkpoint (block size 1024)
         # but want to use a smaller block size for some smaller, simpler model
@@ -309,7 +310,7 @@ class GPTLoRA(nn.Module):
             block.attn.bias = block.attn.bias[:, :, :sequence_length, :sequence_length]
 
     @classmethod
-    def from_pretrained(cls, model_type, override_args=None):
+    def from_pretrained(cls, model_type: str, override_args: Namespace = None) -> "GPTLoRA":
         model_hf = GPT2LMHeadModel.from_pretrained(model_type)
         sd_hf = model_hf.state_dict()
 
@@ -348,7 +349,7 @@ class GPTLoRA(nn.Module):
         model.load_state_dict(sd_hf)
         return model
 
-    def get_parameter_group_specs(self):
+    def get_parameter_group_specs(self) -> List[Dict[str, Any]]:
         """
         This long function is unfortunately doing something very simple and is being very defensive:
         We are separating out all parameters of the model into two buckets: those that will experience
@@ -403,7 +404,7 @@ class GPTLoRA(nn.Module):
         ]
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
+    def generate(self, idx: Tensor, max_new_tokens: int, temperature: float = 1.0, top_k: int = None) -> Tensor:
         """
         Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
         the sequence max_new_tokens times, feeding the predictions back into the model each time.
@@ -430,7 +431,8 @@ class GPTLoRA(nn.Module):
         return idx
 
     @torch.no_grad()
-    def generate_from_string(self, in_str, max_new_tokens, temperature=1.0, top_k=None):
+    def generate_from_string(self, in_str: str, max_new_tokens: int, temperature: float = 1.0,
+                             top_k: int = None) -> str:
         idx = torch.tensor(self.tokenizer.encode(in_str, allowed_special={"<|endoftext|>"})).view(1, -1).to(
             self.lm_head.weight.device)
         out_idx = self.generate(idx, max_new_tokens, temperature, top_k).view(-1).to('cpu').numpy()
