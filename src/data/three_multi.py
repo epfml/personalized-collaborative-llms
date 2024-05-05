@@ -34,8 +34,9 @@ SPECIFIC_TOKENS_DIST = [
 def save_ref_data(path: str, val_text_per_class: List[str]) -> None:
     ref_data = []
     for i in range(NUM_CATEGORIES):
-        diff = (i // NUM_CATEGORIES) * 2000  # 1600000 tokens
+        diff = (i // NUM_CATEGORIES) * 2000
         ref_text = " ".join(val_text_per_class[i % NUM_CATEGORIES][:diff])
+        print(len(ref_text))
         raw_tokenized_ref = TOKENIZER.encode_ordinary(ref_text)
         ref_data.append(np.array(raw_tokenized_ref, dtype=np.uint16)[:MAX_SPECIFIC_TOKENS["ref"]])
 
