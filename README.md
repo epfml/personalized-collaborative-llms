@@ -71,20 +71,17 @@ src                              # Main source folder
 │   ├── __init__.py                # Chooses the correct config
 │   └── lora.py                    # Configuration parameters for LoRA models
 ├── data                          # Datasets folder
-│   ├── agnews_mixed.py            #
-│   ├── agnews_specific.py         #
-│   ├── fed_cc_news.py             #
-│   ├── github_wiki_mixed.py       #
-│   ├── github_wiki_specific.py    #
-│   ├── split_wikitext.py          #
-│   ├── three_multi_mixed.py       #
-│   ├── three_multi_specific.py    #
+│   ├── agnews.py                  # AGNews dataset
+│   ├── fed_cc_news.py             # Comon Crawl News Federated Leraning dataset 
+│   ├── github_wiki.py             # Java github code and wikipedia EN dataset
+│   ├── three_multi.py             # Wikipedia FR, DE and IT
 │   ├── utils.py                   # Get the correct dataset from the configuration parameters
-│   └── wikitext.py                #
+│   ├── wikitext.py                # EN Wikipedia, single client test
+│   └── wikitext_split.py          # EN, FR, IT or DE, single client test
 ├── distributed                   # Distributed package to run experiments on multiple GPU, NOT used in our experiments
 │   └── ...                        # Only the default, single backend is used
 ├── gen_dataset.py                 # Allows to generate only datasets
-├── main.py                        #
+├── main.py                        # Put everything togheter to fine-tune LoRA model on the various dataset
 ├── models                        # Models definition
 │   ├── lora.py                    # LoRA nano-GPT model definition
 │   └── utils.py                   # Get the correct model from the configuration parameters
