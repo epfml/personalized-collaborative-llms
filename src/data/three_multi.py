@@ -33,12 +33,8 @@ SPECIFIC_TOKENS_DIST = [
 
 def save_ref_data(path: str, val_text_per_class: List[str]) -> None:
     ref_data = []
-    print(len(val_text_per_class), [len(val_text_per_class[i][:2000]) for i in range(NUM_CATEGORIES)],
-          [type(val_text_per_class[i][:2000]) for i in range(NUM_CATEGORIES)])
     for i in range(NUM_CATEGORIES):
-        diff = (i // NUM_CATEGORIES) * 2000
-        ref_text = " ".join(val_text_per_class[i % NUM_CATEGORIES][:diff])
-        print(len(ref_text))
+        ref_text = " ".join(val_text_per_class[i % NUM_CATEGORIES][:2000])
         raw_tokenized_ref = TOKENIZER.encode_ordinary(ref_text)
         ref_data.append(np.array(raw_tokenized_ref, dtype=np.uint16)[:MAX_SPECIFIC_TOKENS["ref"]])
 
@@ -153,8 +149,6 @@ def get_three_multi_data(dist: str) -> Dict[str, List[np.ndarray] | np.ndarray]:
         del dataset_text, sampled_indices
 
         end = save_train_val_data(dist, train_text_per_class, val_text_per_class, DATA_PATH)
-        print(end)
-        print([len(val_text_per_class[i][end:]) for i in range(NUM_CATEGORIES)])
         save_ref_data(DATA_PATH, [val_text_per_class[i][end:] for i in range(NUM_CATEGORIES)])
 
         print("completed the tokenization process!")
