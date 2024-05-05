@@ -33,6 +33,7 @@ SPECIFIC_TOKENS_DIST = [
 
 def save_ref_data(path: str, val_text_per_class: List[str]) -> None:
     ref_data = []
+    print(val_text_per_class, [len(val_text_per_class[i]) for i in range(NUM_CATEGORIES)])
     for i in range(NUM_CATEGORIES):
         diff = (i // NUM_CATEGORIES) * 2000
         ref_text = " ".join(val_text_per_class[i % NUM_CATEGORIES][:diff])
