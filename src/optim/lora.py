@@ -1,19 +1,24 @@
 import json
 import time
+from argparse import Namespace
 from contextlib import nullcontext
-from typing import Callable
+from typing import Callable, List, Union, Dict
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import wandb
-from torch import Tensor
+from torch import Tensor, nn
 
 from .utils import eval, get_batch
+from ..distributed.ddp import DataParallelDistributedBackend
+from ..distributed.single import SingleNodeBackend
 
 
-def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length, eval_freq,
-               distributed_backend, extra_args):
+def train_lora(clients: List[nn.Module], data: Dict[str, List[np.ndarray]], iterations: int, acc_steps: int,
+               batch_size: int, sequence_length: int, eval_freq: int,
+               distributed_backend: Union[DataParallelDistributedBackend, SingleNodeBackend],
+               extra_args: Namespace) -> Dict[str, List[List[float]]]:
     device_type = 'cuda' if 'cuda' in str(extra_args.device) else 'cpu'
     type_ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(
         device_type=device_type, dtype=torch.bfloat16)  # extra_args.dtype)
@@ -184,7 +189,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
     return stats
 
 
-def __weighted_average(clients, trust_weights) -> None:
+def __weighted_average(clients: List[nn.Module], trust_weights: Tensor) -> None:
     print(type(trust_weights), np.array(trust_weights), type(np.array(trust_weights)))
     wandb.log({'Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
 
@@ -212,13 +217,13 @@ def __weighted_average(clients, trust_weights) -> None:
     del weights
 
 
-def __average(clients) -> None:
+def __average(clients: List[nn.Module]) -> None:
     trust_weights = torch.zeros((len(clients), len(clients)))
     trust_weights = torch.fill(trust_weights, 1 / len(clients))
     __weighted_average(clients, trust_weights)
 
 
-def __average_static(clients, dataset) -> None:
+def __average_static(clients: List[nn.Module], dataset: str) -> None:
     trust_weights = torch.zeros((len(clients), len(clients)))
     for id_1 in range(len(clients)):
         for id_2 in range(len(clients)):
@@ -271,8 +276,8 @@ def __average_static(clients, dataset) -> None:
     __weighted_average(clients, trust_weights)
 
 
-def similarity_weights(client1, client2,
-                       similarity: Callable[[Tensor, Tensor], Tensor] = F.cosine_similarity):
+def similarity_weights(client1: nn.Module, client2: nn.Module,
+                       similarity: Callable[[Tensor, Tensor], Tensor] = F.cosine_similarity) -> float:
     score = 0
     total_size = 0
     for (name1, param1), (name2, param2) in zip(client1.named_parameters(), client2.named_parameters()):
@@ -286,8 +291,8 @@ def similarity_weights(client1, client2,
     return score / total_size
 
 
-def clients_similarity(clients,
-                       sim_func,
+def clients_similarity(clients: List[nn.Module],
+                       sim_func: Callable[[nn.Module, nn.Module, Callable[[Tensor, Tensor], Tensor]], float],
                        similarity: Callable[[Tensor, Tensor], Tensor] = F.cosine_similarity) -> Tensor:
     trust_weight = torch.zeros((len(clients), len(clients)))
     for idx1, (model1, _, _) in enumerate(clients):
@@ -299,13 +304,13 @@ def clients_similarity(clients,
     return trust_weight
 
 
-def __average_dynamic(clients) -> None:
+def __average_dynamic(clients: List[nn.Module]) -> None:
     trust_weights = clients_similarity(clients, similarity_weights)
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
 
 
-def __average_dynamic_threshold(clients) -> None:
+def __average_dynamic_threshold(clients: List[nn.Module]) -> None:
     trust_weights = clients_similarity(clients, similarity_weights)
     topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
     trust_weights[trust_weights <= 0.5] = -1e9
@@ -314,7 +319,7 @@ def __average_dynamic_threshold(clients) -> None:
     __weighted_average(clients, trust_weights)
 
 
-def __average_dynamic_top_k(clients, k) -> None:
+def __average_dynamic_top_k(clients: List[nn.Module], k: int) -> None:
     trust_weights = clients_similarity(clients, similarity_weights)
     topk_values, topk_indices = torch.topk(trust_weights, k, dim=-1)
     mask = torch.zeros_like(trust_weights)
@@ -324,12 +329,12 @@ def __average_dynamic_top_k(clients, k) -> None:
     __weighted_average(clients, trust_weights)
 
 
-def __average_dynamic_ref(clients, trust_weights) -> None:
+def __average_dynamic_ref(clients: List[nn.Module], trust_weights: Tensor) -> None:
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
 
 
-def __average_dynamic_threshold_ref(clients, trust_weights) -> None:
+def __average_dynamic_threshold_ref(clients: List[nn.Module], trust_weights: Tensor) -> None:
     topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
     trust_weights[trust_weights <= -30] = -1e9
     trust_weights.scatter_(-1, topk_indices, topk_values)
@@ -337,7 +342,7 @@ def __average_dynamic_threshold_ref(clients, trust_weights) -> None:
     __weighted_average(clients, trust_weights)
 
 
-def __average_dynamic_top_k_ref(clients, trust_weights, k) -> None:
+def __average_dynamic_top_k_ref(clients: List[nn.Module], trust_weights: Tensor, k: int) -> None:
     topk_values, topk_indices = torch.topk(trust_weights, k, dim=-1)
     mask = torch.zeros_like(trust_weights)
     mask = torch.fill(mask, -1e9)
@@ -346,12 +351,12 @@ def __average_dynamic_top_k_ref(clients, trust_weights, k) -> None:
     __weighted_average(clients, trust_weights)
 
 
-def __average_dynamic_token(clients, trust_weights) -> None:
+def __average_dynamic_token(clients: List[nn.Module], trust_weights: Tensor) -> None:
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
 
 
-def __average_dynamic_threshold_token(clients, trust_weights) -> None:
+def __average_dynamic_threshold_token(clients: List[nn.Module], trust_weights: Tensor) -> None:
     topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
     trust_weights[trust_weights <= -50] = -1e9
     trust_weights.scatter_(-1, topk_indices, topk_values)
@@ -359,7 +364,7 @@ def __average_dynamic_threshold_token(clients, trust_weights) -> None:
     __weighted_average(clients, trust_weights)
 
 
-def __average_dynamic_top_k_token(clients, trust_weights, k) -> None:
+def __average_dynamic_top_k_token(clients: List[nn.Module], trust_weights: Tensor, k: int) -> None:
     topk_values, topk_indices = torch.topk(trust_weights, k, dim=-1)
     mask = torch.zeros_like(trust_weights)
     mask = torch.fill(mask, -1e9)

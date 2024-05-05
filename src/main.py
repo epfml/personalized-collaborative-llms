@@ -5,6 +5,7 @@ import json
 import os
 import random
 import sys
+from argparse import Namespace
 
 import numpy as np
 import torch
@@ -17,14 +18,14 @@ from models.utils import get_model
 from optim.lora import train_lora
 
 
-def get_args():
+def get_args() -> Namespace:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument('--config_format', choices=config.registered_formats())
     args, rem_args = parser.parse_known_args()
     return config.parse_args_with_format(format=args.config_format, base_parser=parser, args=rem_args, namespace=args)
 
 
-def get_exp_name(args):
+def get_exp_name(args: Namespace) -> str:
     """ Returns the name of the experiment, used for saving models and wandb. """
     exp_name = f"{args.model}_lr{args.lr}_bs{args.batch_size}x{args.acc_steps}_{args.world_size}nodes"
     if args.wandb_run_prefix != 'none':
@@ -37,7 +38,7 @@ def get_exp_name(args):
     return exp_name
 
 
-def main(args):
+def main(args: Namespace) -> None:
     torch.backends.cuda.matmul.allow_tf32 = True  # allows us to make sure we're able to use tensor float32 during training
     torch.backends.cudnn.allow_tf32 = True
 

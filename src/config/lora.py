@@ -1,8 +1,11 @@
+from argparse import ArgumentParser, Namespace
+from typing import List
+
 import distributed
 import torch
 
 
-def parse_args(base_parser, args, namespace):
+def parse_args(base_parser: ArgumentParser, args: List[str], namespace: Namespace) -> Namespace:
     parser = base_parser
     # General training params
     parser.add_argument('--num_clients', required=True, type=int)
