@@ -87,5 +87,6 @@ src                              # Main source folder
 │   └── utils.py                   # Get the correct model from the configuration parameters
 └── optim                         # Training/Fine-tuning loop for the models 
     ├── lora.py                    # Loop for LoRA model
+    ├── strategies.py              # Aggregation methods for collaborative learning
     └── utils.py                   # General useful methods
 ```

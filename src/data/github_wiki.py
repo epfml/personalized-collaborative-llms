@@ -6,8 +6,6 @@ import numpy as np
 import tiktoken
 from datasets import load_from_disk, load_dataset
 
-from .utils import WIKI_PATH_EN
-
 TOKENIZER = tiktoken.get_encoding("gpt2")
 GIT_DATASET_LOADER = iter(
     load_dataset("codeparrot/github-code-clean", streaming=True, split="train", languages=["Java"]))
@@ -58,6 +56,7 @@ def get_github_wikitext_data(dist: str) -> Dict[str, List[np.ndarray] | np.ndarr
 
         index = 0
 
+        from .utils import WIKI_PATH_EN
         dataset_idx, dataset_path = "20220301.en", WIKI_PATH_EN
         if os.path.isdir(dataset_path):
             print("loading from disk: ", dataset_idx)
