@@ -68,7 +68,7 @@ def train_lora(clients: List[List[nn.Module | Optimizer | LRScheduler]], data: D
 
         # aggregate models
         if itr[-1] % extra_args.trust_freq == 0 and itr[-1] >= extra_args.pretraining_rounds - 1:
-            aggregate(extra_args.trust)
+            aggregate(clients, extra_args.trust, data, sequence_length, batch_size, type_ctx, extra_args)
 
         # from here it's only evaluation code, all the training is above
         t1 = time.time()
