@@ -21,6 +21,6 @@ for trust in "${trusts[@]}"; do
         num_client=${num_clients[i]}
         proj_name=${project_name[i]}
         echo "---------------- New experiment: $dataset_name, $trust, $num_client, $proj_name ----------------"
-        ./scripts/script.sh $proj_name $dataset_name $trust $num_client $runs
+        ./scripts/script.sh "$proj_name" "$dataset_name" "$trust" "$num_client" $runs
     done
 done
