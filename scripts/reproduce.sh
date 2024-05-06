@@ -8,9 +8,9 @@ project_name=(cl-AG-M cl-AG-S cl-TW-M cl-TW-S cl-GW-M cl-GW-S)
 len=6
 
 if [ "$#" -ne 1 ]; then
-    runs=$1
-else
     runs=10
+else
+    runs=$1
 fi
 
 echo "Starting runs, using $runs runs per experiment"
@@ -21,6 +21,6 @@ for trust in "${trusts[@]}"; do
         num_client=${num_clients[i]}
         proj_name=${project_name[i]}
         echo "---------------- New experiment: $dataset_name, $trust, $num_client, $proj_name ----------------"
-        ./scripts/script.sh "$proj_name" "$dataset_name" "$trust" "$num_client" $runs
+        echo ./scripts/script.sh "$proj_name" "$dataset_name" "$trust" "$num_client" $runs
     done
 done
