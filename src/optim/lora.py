@@ -12,8 +12,8 @@ from torch.optim.lr_scheduler import LRScheduler
 
 from .strategies import aggregate
 from .utils import eval, get_batch
-from ..distributed.ddp import DataParallelDistributedBackend
-from ..distributed.single import SingleNodeBackend
+from distributed.ddp import DataParallelDistributedBackend
+from distributed.single import SingleNodeBackend
 
 
 def train_lora(clients: List[List[nn.Module | Optimizer | LRScheduler]], data: Dict[str, List[np.ndarray]],
