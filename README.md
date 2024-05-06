@@ -37,30 +37,51 @@ To reproduce the experiments you can run the following commands. There are sever
 1. This might take a while to run, because we run the experiments with 10 different seeds.
 2. There two variants to the datasets.
 3. For clearer visualisation on wandb, we used a different project for each dataset.
-4. The number of clients used can be changed but there is a specific range for each dataset.
+4. The number of clients used can be changed but there is a specific range for each dataset (maximum 20 clients and must
+   be a multiple of the number of categories it has).
+5. Trust possible value to aggregate the models:
+   - "none": only local training
+   - "naive": using weights 1/N
+   - "static": using theoretical fixed weights as described in the paper
+   - "dynamic": using weights computed by similarity between models
+   - "dynamic-ref": using weights computed by using the validation scores
+   - "dynamic-token": using weights computed by comparing predictions of models
+
+#### General script
+
+To get the same results, you can just run the following command, it will create a wandb project per dataset and have 10
+runs per pair (trust, dataset).
+
+```
+./scripts/reproduce.sh
+```
 
 #### AG News
 
-News articles in four categories: “World”, “Sports”, “Business” and “Sci/Tech”.
+News articles in four categories: “World”, “Sports”, “Business” and “Sci/Tech”. \
+dataset_name = <"agnews_mixed"|"agnews_specific">
+num_clients = <4|8>
 
 ```
-./scripts/script.sh <wandb_project> <dataset_name> <trust> <num_clients>
+./scripts/script.sh <wandb_project> <dataset_name> <trust> <num_clients> 10
 ```
 
 #### Multilingual Wikipedia
 
 Wikipedia texts in three languages (categories): French, Italian, and German.
+dataset_name = <"three_multi_mixed"|"three_multi_specific">
 
 ```
-./scripts/script.sh <wandb_project> <dataset_name> <trust> <num_clients>
+./scripts/script.sh <wandb_project> <dataset_name> <trust> 9 10
 ```
 
 #### Codes-Wikipedia (Eng)
 
 The first category is Java code from GitHub (HuggingFace) and the second category is English Wikipedia text
+dataset_name = <"github_wiki_mixed"|"github_wiki_specific">
 
 ```
-./scripts/script.sh <wandb_project> <dataset_name> <trust> <num_clients>
+./scripts/script.sh <wandb_project> <dataset_name> <trust> 8 10
 ```
 
 ## Code structure
