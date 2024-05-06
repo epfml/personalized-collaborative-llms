@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$#" -ne 4 ]; then
+if [ "$#" -ne 5 ]; then
     echo "Usage: $0 wandb_project dataset_name trust num_clients runs"
     exit 1
 fi
