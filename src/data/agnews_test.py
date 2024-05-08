@@ -5,7 +5,7 @@ import numpy as np
 import tiktoken
 import torchtext
 
-AGNEWS_TEST_DATA_PATH = tiktoken.get_encoding("gpt2")
+TOKENIZER = tiktoken.get_encoding("gpt2")
 NUM_CLIENTS = 4
 NUM_CATEGORIES = 4
 
@@ -34,8 +34,8 @@ def get_agnews_test_data() -> Dict[str, List[np.ndarray] | np.ndarray]:
         for i in range(NUM_CATEGORIES):
             train_text = ' '.join(train_text_per_class[i])
             val_text = ' '.join(val_text_per_class[i])
-            raw_tokenized_train = AGNEWS_TEST_DATA_PATH.encode_ordinary(train_text)
-            raw_tokenized_eval = AGNEWS_TEST_DATA_PATH.encode_ordinary(val_text)
+            raw_tokenized_train = TOKENIZER.encode_ordinary(train_text)
+            raw_tokenized_eval = TOKENIZER.encode_ordinary(val_text)
 
             train_tokenized = np.array(raw_tokenized_train, dtype=np.uint16)
             eval_tokenized = np.array(raw_tokenized_eval, dtype=np.uint16)
