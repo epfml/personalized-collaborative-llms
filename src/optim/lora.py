@@ -12,8 +12,8 @@ from torch.optim.lr_scheduler import LRScheduler
 
 from .strategies import aggregate
 from .utils import eval, get_batch
-from ..distributed.ddp import DataParallelDistributedBackend
-from ..distributed.single import SingleNodeBackend
+from distributed.ddp import DataParallelDistributedBackend
+from distributed.single import SingleNodeBackend
 
 
 def train_lora(clients: List[List[nn.Module | Optimizer | LRScheduler]], data: Dict[str, List[np.ndarray]],
@@ -68,7 +68,72 @@ def train_lora(clients: List[List[nn.Module | Optimizer | LRScheduler]], data: D
 
         # aggregate models
         if itr[-1] % extra_args.trust_freq == 0 and itr[-1] >= extra_args.pretraining_rounds - 1:
-            aggregate(extra_args.trust)
+            if extra_args.trust == 'none':
+                pass
+            elif extra_args.trust == 'naive':
+                __average(clients)
+            elif extra_args.trust == 'static':
+                __average_static(clients, extra_args.dataset)
+            elif extra_args.trust == 'dynamic':
+                __average_dynamic(clients)
+            elif extra_args.trust == 'dynamic-thresh':
+                __average_dynamic_threshold(clients)
+            elif extra_args.trust == 'dynamic-top-k':
+                __average_dynamic_top_k(clients, extra_args.k)
+            elif 'ref' in extra_args.trust:
+                res = torch.zeros((num_clients, num_clients))
+                for model, _, _ in clients:
+                    model.eval()
+                for id1 in range(len(clients)):
+                    for id2, (model, _, _) in enumerate(clients):
+                        model.eval()
+                        _, _, val_perplexity = eval(model, data['val'][id1], sequence_length, batch_size,
+                                                    extra_args.device, max_num_batches=12, ctx=type_ctx)
+                        res[id1, id2] = val_perplexity
+                        model.train()
+                for model, _, _ in clients:
+                    model.train()
+                res = -res
+                if extra_args.trust == 'dynamic-ref':
+                    __average_dynamic_ref(clients, res)
+                elif extra_args.trust == 'dynamic-thresh-ref':
+                    __average_dynamic_threshold_ref(clients, res)
+                elif extra_args.trust == 'dynamic-top-k-ref':
+                    __average_dynamic_top_k_ref(clients, res, extra_args.k)
+            elif 'token' in extra_args.trust:
+                logits = [[] for _ in range(len(clients))]
+                for model, _, _ in clients:
+                    model.eval()
+                for j in range(4):
+                    print(f'\r{j} batch ref', end='')
+                    x, y = get_batch(data['ref'], sequence_length, batch_size, extra_args.device)
+                    for id, (model, _, _) in enumerate(clients):
+                        with type_ctx:
+                            outputs = model(x, get_logits=True)
+                        logits_out = outputs['logits'].detach()
+                        v, _ = torch.topk(logits_out, 100)
+                        logits_out[logits_out < v[:, :, [-1]]] = 0
+                        logits_out = logits_out.to_sparse_coo()
+                        logits[id].append(logits_out)
+                for model, _, _ in clients:
+                    model.train()
+
+                res = torch.zeros((num_clients, num_clients))
+                for id1 in range(len(clients)):
+                    for id2 in range(len(clients)):
+                        sim = 0
+                        for j in range(4):
+                            sim += torch.sum(torch.abs(logits[id1][j] - logits[id2][j])).item()
+                        res[id1, id2] = sim / (4 * batch_size)
+
+                res = F.normalize(res, p=1, dim=1)
+                res = -res * 10
+                if extra_args.trust == 'dynamic-token':
+                    __average_dynamic_token(clients, res)
+                elif extra_args.trust == 'dynamic-thresh-token':
+                    __average_dynamic_threshold_token(clients, res)
+                elif extra_args.trust == 'dynamic-top-k-token':
+                    __average_dynamic_top_k_token(clients, res, extra_args.k)
 
         # from here it's only evaluation code, all the training is above
         t1 = time.time()
