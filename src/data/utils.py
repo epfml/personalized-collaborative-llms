@@ -3,6 +3,8 @@ from typing import Dict, List
 
 import numpy as np
 
+
+
 WIKI_PATH_EN = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.en")
 WIKI_PATH_FR = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.fr")
 WIKI_PATH_IT = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.it")
@@ -14,6 +16,7 @@ from .github_wiki import get_github_wikitext_data
 from .wikitext_split import get_split_multi_data
 from .three_multi import get_three_multi_data
 from .wikitext import get_wikitext_data
+from .agnews_test import get_agnews_test_data
 
 
 def get_dataset(args) -> Dict[str, List[np.ndarray] | np.ndarray]:
@@ -24,6 +27,8 @@ def get_dataset(args) -> Dict[str, List[np.ndarray] | np.ndarray]:
 
     if args.dataset == "fed_cc_news":
         return get_fed_cc_news()
+    elif args.dataset == "agnews_test":
+        return get_agnews_test_data()
 
     elif args.dataset == "agnews_mixed":
         return get_agnews_data("mixed")
