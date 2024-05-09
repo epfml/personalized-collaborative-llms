@@ -27,7 +27,7 @@ def aggregate(clients: List[List[nn.Module | Optimizer | LRScheduler]], trust: s
     elif trust == 'naive':
         trust_weights = __naive_weights(clients)
     elif trust == 'static':
-        __static_weights(clients, extra_args.dataset)
+        trust_weights = __static_weights(clients, extra_args.dataset)
 
     elif 'dynamic' in trust:
         trust_weights = __trust_weights_weights(clients, similarity_weights)
@@ -106,7 +106,7 @@ def __naive_weights(clients: List[List[nn.Module | Optimizer | LRScheduler]]) ->
     return torch.fill(trust_weights, 1 / len(clients))
 
 
-def __static_weights(clients: List[List[nn.Module | Optimizer | LRScheduler]], dataset: str) -> None:
+def __static_weights(clients: List[List[nn.Module | Optimizer | LRScheduler]], dataset: str) -> Tensor:
     if dataset == 'agnews_mixed':
         TOKENS_DIST = AG_MIXED_TOKENS_DIST
     elif dataset == 'agnews_specific':
