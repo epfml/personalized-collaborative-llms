@@ -40,6 +40,7 @@ def aggregate(clients: List[List[nn.Module | Optimizer | LRScheduler]], trust: s
 
     elif 'ref' in trust:
         trust_weights = __trust_weights_ref(clients, data, sequence_length, batch_size, type_ctx, extra_args)
+        print(trust_weights)
         if trust == 'dynamic-ref':
             trust_weights = F.softmax(trust_weights, dim=1)
         elif trust == 'dynamic-thresh-ref':
