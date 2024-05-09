@@ -116,10 +116,6 @@ def train_lora(clients: List[List[nn.Module | Optimizer | LRScheduler]], data: D
                         }, commit=(i == (num_clients - 1)))
 
                     model.train()
-        if itr[-1] % eval_freq == 0 or itr[-1] == iterations:
-            for idx, c in enumerate(clients):
-                model, _, _ = c
-                torch.save(model.state_dict(), f'{idx}_{itr[-1]}')
         t0 = time.time()
 
     return stats
