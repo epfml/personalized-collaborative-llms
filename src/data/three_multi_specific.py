@@ -7,8 +7,8 @@ from datasets import load_from_disk, load_dataset
 num_clients = 20
 MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/three_multi_specific/{num_clients}/")
 
-def get_three_multi_data_specific(train_size: int):
-    NEW_MULTI_DATA_PATH = os.path.join(MULTI_DATA_PATH, f"{train_size}/")
+def get_three_multi_data_specific(token_train_size: int):
+    NEW_MULTI_DATA_PATH = os.path.join(MULTI_DATA_PATH, f"{token_train_size}/")
 
     if not os.path.exists(NEW_MULTI_DATA_PATH):
         os.makedirs(NEW_MULTI_DATA_PATH)
@@ -30,10 +30,10 @@ def get_three_multi_data_specific(train_size: int):
 
         traintext_perclass = []
         testtext_perclass = []
-        print('sample \% of the data')
+        print(f'sample \% of the data, {token_train_size}')
         for i in range(len(dataset_text)):
             print(f'{i}: {len(dataset_text[i])}')
-            sampled_indices = np.random.choice(np.arange(len(dataset_text[i])), size=int(0.4 * len(dataset_text[i])),
+            sampled_indices = np.random.choice(np.arange(len(dataset_text[i])), size=int(0.2 * len(dataset_text[i])),
                                            replace=False).astype(int)
             dataset_text[i] = [dataset_text[i][ind] for ind in sampled_indices]
             train_size = int(0.84 * len(dataset_text[i]))
@@ -48,7 +48,7 @@ def get_three_multi_data_specific(train_size: int):
         testdata = []
         ref_data = []
         for i in range(num_clients):
-            start = (i // 3) * (train_size // 840000) * 15000 # 800000 tokens
+            start = (i // 3) * (token_train_size // 840000) * 15000 # 800000 tokens
             end = ((i // 3) + 1) * 1500
             traindata.append(traintext_perclass[i % 3][start:end])
             start = (i // 3) * 300 # 160000 tokens
@@ -64,7 +64,7 @@ def get_three_multi_data_specific(train_size: int):
         for i in range(num_clients):
             traintext = ' '.join(traindata[i])
             testtext = ' '.join(testdata[i])
-            raw_tokenized_train = tokenizer.encode_ordinary(traintext)[:train_size]
+            raw_tokenized_train = tokenizer.encode_ordinary(traintext)[:token_train_size]
             raw_tokenized_eval = tokenizer.encode_ordinary(testtext)[:160000]
 
             train_tokenized = np.array(raw_tokenized_train, dtype=np.uint16)
