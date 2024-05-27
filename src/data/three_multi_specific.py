@@ -7,10 +7,11 @@ from datasets import load_from_disk, load_dataset
 num_clients = 20
 MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/three_multi_specific/{num_clients}/")
 
-def get_three_multi_data_specific():
+def get_three_multi_data_specific(train_size: int):
+    NEW_MULTI_DATA_PATH = os.path.join(MULTI_DATA_PATH, f"{train_size}/")
 
-    if not os.path.exists(MULTI_DATA_PATH):
-        os.makedirs(MULTI_DATA_PATH)
+    if not os.path.exists(NEW_MULTI_DATA_PATH):
+        os.makedirs(NEW_MULTI_DATA_PATH)
 
         print('This data downloading process might take a while... be patient.')
         dataset_text = []
@@ -47,7 +48,7 @@ def get_three_multi_data_specific():
         testdata = []
         ref_data = []
         for i in range(num_clients):
-            start = (i // 3) * 1500 # 800000 tokens
+            start = (i // 3) * (train_size / 800000) * 1500 # 800000 tokens
             end = ((i // 3) + 1) * 1500
             traindata.append(traintext_perclass[i % 3][start:end])
             start = (i // 3) * 300 # 160000 tokens
@@ -63,7 +64,7 @@ def get_three_multi_data_specific():
         for i in range(num_clients):
             traintext = ' '.join(traindata[i])
             testtext = ' '.join(testdata[i])
-            raw_tokenized_train = tokenizer.encode_ordinary(traintext)[:840000]
+            raw_tokenized_train = tokenizer.encode_ordinary(traintext)[:train_size]
             raw_tokenized_eval = tokenizer.encode_ordinary(testtext)[:160000]
 
             train_tokenized = np.array(raw_tokenized_train, dtype=np.uint16)
@@ -71,14 +72,14 @@ def get_three_multi_data_specific():
 
             print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval ')
 
-            train_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'))
-            eval_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
+            train_tokenized.tofile(os.path.join(NEW_MULTI_DATA_PATH, f'train_{i}.bin'))
+            eval_tokenized.tofile(os.path.join(NEW_MULTI_DATA_PATH, f'val_{i}.bin'))
 
         ref_tokenized = np.concatenate(ref_data)
 
         print(f'{ref_tokenized.shape} ref')
 
-        ref_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ref.bin'))
+        ref_tokenized.tofile(os.path.join(NEW_MULTI_DATA_PATH, f'ref.bin'))
 
         del traindata, testdata, ref_data
         del traintext, testtext, reftext, raw_tokenized_eval, raw_tokenized_train, raw_tokenized_ref, train_tokenized, eval_tokenized, ref_tokenized
@@ -88,9 +89,9 @@ def get_three_multi_data_specific():
     val_data = []
 
     for i in range(num_clients):
-        train_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
-        val_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
+        train_data.append(np.memmap(os.path.join(NEW_MULTI_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
+        val_data.append(np.memmap(os.path.join(NEW_MULTI_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
 
-    ref_data = np.memmap(os.path.join(MULTI_DATA_PATH, f'ref.bin'), dtype=np.uint16, mode='r')
+    ref_data = np.memmap(os.path.join(NEW_MULTI_DATA_PATH, f'ref.bin'), dtype=np.uint16, mode='r')
 
     return {'train': train_data, 'val': val_data, 'ref': ref_data}

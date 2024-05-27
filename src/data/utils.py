@@ -23,9 +23,9 @@ def get_dataset(args) -> Dict[str, np.ndarray]:
     if args.dataset == 'agnews_specific':
         return get_agnews_specific_data()
     if args.dataset == 'three_multi_specific':
-        return get_three_multi_data_specific()
+        return get_three_multi_data_specific(args.train_size)
     if args.dataset == 'three_multi_mixed':
-        return get_three_multi_data_mixed()
+        return get_three_multi_data_mixed(args.train_size)
     if args.dataset == 'github_wiki_specific':
         return get_github_wikitext_data_specific()
     if args.dataset == 'github_wiki_mixed':

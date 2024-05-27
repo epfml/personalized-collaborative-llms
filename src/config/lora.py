@@ -64,4 +64,5 @@ def parse_args(base_parser, args, namespace):
     parser.add_argument('--trust_freq', type=int, default=1)
     parser.add_argument('--pretraining_rounds', type=int, default=0)
     parser.add_argument('--k', type=int, default=3)
+    parser.add_argument('--train_size', type=int, required=True)
     return parser.parse_args(args, namespace)
