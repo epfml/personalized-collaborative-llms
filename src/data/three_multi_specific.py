@@ -9,10 +9,17 @@ MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/three_multi
 
 def get_min_token(idx, text_data, min_token, tokenizer):
     data = []
+    incr = 100
+    prev_size = 0
     while len(data) < min_token:
         print(idx, len(data))
-        data.extend(tokenizer.encode_ordinary(' '.join(text_data)[idx:idx + 100]))
-        idx += 100
+        data.extend(tokenizer.encode_ordinary(' '.join(text_data)[idx:idx + incr]))
+        idx += incr
+
+        pred = len(data) - prev_size
+        prev_size = len(data)
+        if pred / 10 < min_token - len(data):
+            incr *= 2
 
     return idx, data
 
