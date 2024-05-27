@@ -126,7 +126,7 @@ def main(args):
     stats = train(clients, data, args.iterations, args.acc_steps, args.batch_size, args.sequence_length,
                   eval_freq=args.eval_freq,
                   distributed_backend=distributed_backend,
-                  ckpt_path=f'{ckpt_path}/ckpt.pt', extra_args=args)
+                  extra_args=args)
 
     args.device = None
     args.dtype = None

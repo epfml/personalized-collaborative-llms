@@ -178,7 +178,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
         if itr[-1] % eval_freq == 0 or itr[-1] == iterations:
             for idx, c in enumerate(clients):
                 model, _, _ = c
-                torch.save(model.state_dict(), f'{idx}_{itr[-1]}')
+                #torch.save(model.state_dict(), f'{idx}_{itr[-1]}')
         t0 = time.time()
 
     return stats
