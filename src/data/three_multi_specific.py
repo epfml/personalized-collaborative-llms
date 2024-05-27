@@ -33,7 +33,7 @@ def get_three_multi_data_specific(train_size: int):
         print('sample \% of the data')
         for i in range(len(dataset_text)):
             print(f'{i}: {len(dataset_text[i])}')
-            sampled_indices = np.random.choice(np.arange(len(dataset_text[i])), size=int(0.2 * len(dataset_text[i])),
+            sampled_indices = np.random.choice(np.arange(len(dataset_text[i])), size=int(0.4 * len(dataset_text[i])),
                                            replace=False).astype(int)
             dataset_text[i] = [dataset_text[i][ind] for ind in sampled_indices]
             train_size = int(0.84 * len(dataset_text[i]))
@@ -48,7 +48,7 @@ def get_three_multi_data_specific(train_size: int):
         testdata = []
         ref_data = []
         for i in range(num_clients):
-            start = (i // 3) * int((train_size / 800000) * 1500) # 800000 tokens
+            start = (i // 3) * (train_size // 840000) * 1500 # 800000 tokens
             end = ((i // 3) + 1) * 1500
             traindata.append(traintext_perclass[i % 3][start:end])
             start = (i // 3) * 300 # 160000 tokens
