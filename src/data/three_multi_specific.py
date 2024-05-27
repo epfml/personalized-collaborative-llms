@@ -4,7 +4,7 @@ import numpy as np
 import tiktoken
 from datasets import load_from_disk, load_dataset
 
-num_clients = 20
+num_clients = 9
 MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/three_multi_specific/{num_clients}/")
 
 def get_min_token(idx, text_data, min_token, tokenizer):
@@ -52,29 +52,23 @@ def get_three_multi_data_specific(token_train_size: int):
 
         del dataset_text
 
-        traindata = []
-        testdata = []
         ref_data = []
         train_idx = [0] * 3
         test_idx = [0] * 3
         for i in range(num_clients):
             train_idx[i % 3], data = get_min_token(train_idx[i % 3], traintext_perclass[i % 3], token_train_size, tokenizer)
-            traindata.append(data)
+            train_tokenized = np.array(data[:token_train_size], dtype=np.uint16)
+            train_tokenized.tofile(os.path.join(NEW_MULTI_DATA_PATH, f'train_{i}.bin'))
+
             test_idx[i % 3], data = get_min_token(test_idx[i % 3], testtext_perclass[i % 3], 160000, tokenizer)
-            testdata.append(data)
+            eval_tokenized = np.array(data[:160000], dtype=np.uint16)
+            eval_tokenized.tofile(os.path.join(NEW_MULTI_DATA_PATH, f'val_{i}.bin'))
+
+            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval ')
 
         for i in range(num_clients, num_clients + 3):
             _, data = get_min_token(test_idx[i % 3], testtext_perclass[i % 3], 300000, tokenizer)
             ref_data.append(np.array(data, dtype=np.uint16)[:300000])
-
-        for i in range(num_clients):
-            train_tokenized = np.array(traindata[i][:token_train_size], dtype=np.uint16)
-            eval_tokenized = np.array(testdata[i][:160000], dtype=np.uint16)
-
-            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval ')
-
-            train_tokenized.tofile(os.path.join(NEW_MULTI_DATA_PATH, f'train_{i}.bin'))
-            eval_tokenized.tofile(os.path.join(NEW_MULTI_DATA_PATH, f'val_{i}.bin'))
 
         ref_tokenized = np.concatenate(ref_data)
 
