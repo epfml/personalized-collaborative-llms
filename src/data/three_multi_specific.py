@@ -48,7 +48,7 @@ def get_three_multi_data_specific(train_size: int):
         testdata = []
         ref_data = []
         for i in range(num_clients):
-            start = (i // 3) * (train_size / 800000) * 1500 # 800000 tokens
+            start = (i // 3) * int((train_size / 800000) * 1500) # 800000 tokens
             end = ((i // 3) + 1) * 1500
             traindata.append(traintext_perclass[i % 3][start:end])
             start = (i // 3) * 300 # 160000 tokens
