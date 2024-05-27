@@ -1,25 +1,19 @@
+import json
 import time
-from argparse import Namespace
 from contextlib import nullcontext
-from typing import List, Union, Dict, Tuple
+from typing import Callable
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import wandb
-from torch import nn
-from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LRScheduler
+from torch import Tensor
 
-from .strategies import aggregate
 from .utils import eval, get_batch
-from distributed.ddp import DataParallelDistributedBackend
-from distributed.single import SingleNodeBackend
 
 
-def train_lora(clients: List[List[nn.Module | Optimizer | LRScheduler]], data: Dict[str, List[np.ndarray]],
-               iterations: int, acc_steps: int, batch_size: int, sequence_length: int, eval_freq: int,
-               distributed_backend: Union[DataParallelDistributedBackend, SingleNodeBackend],
-               extra_args: Namespace) -> Dict[str, List[List[float]]]:
+def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length, eval_freq,
+               distributed_backend, extra_args):
     device_type = 'cuda' if 'cuda' in str(extra_args.device) else 'cpu'
     type_ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(
         device_type=device_type, dtype=torch.bfloat16)  # extra_args.dtype)
@@ -66,9 +60,74 @@ def train_lora(clients: List[List[nn.Module | Optimizer | LRScheduler]], data: D
             scheduler.step()
             itr[i] += 1
 
-        # aggregate models
+        # distribute gradient
         if itr[-1] % extra_args.trust_freq == 0 and itr[-1] >= extra_args.pretraining_rounds - 1:
-            aggregate(clients, extra_args.trust, data, sequence_length, batch_size, type_ctx, extra_args)
+            if extra_args.trust == 'none':
+                pass
+            elif extra_args.trust == 'naive':
+                __average(clients)
+            elif extra_args.trust == 'static':
+                __average_static(clients, extra_args.dataset)
+            elif extra_args.trust == 'dynamic':
+                __average_dynamic(clients)
+            elif extra_args.trust == 'dynamic-thresh':
+                __average_dynamic_threshold(clients)
+            elif extra_args.trust == 'dynamic-top-k':
+                __average_dynamic_top_k(clients, extra_args.k)
+            elif 'ref' in extra_args.trust:
+                res = torch.zeros((num_clients, num_clients))
+                for model, _, _ in clients:
+                    model.eval()
+                for id1 in range(len(clients)):
+                    for id2, (model, _, _) in enumerate(clients):
+                        model.eval()
+                        _, _, val_perplexity = eval(model, data['val'][id1], sequence_length, batch_size,
+                                                    extra_args.device, max_num_batches=12, ctx=type_ctx)
+                        res[id1, id2] = val_perplexity
+                        model.train()
+                for model, _, _ in clients:
+                    model.train()
+                res = -res
+                if extra_args.trust == 'dynamic-ref':
+                    __average_dynamic_ref(clients, res)
+                elif extra_args.trust == 'dynamic-thresh-ref':
+                    __average_dynamic_threshold_ref(clients, res)
+                elif extra_args.trust == 'dynamic-top-k-ref':
+                    __average_dynamic_top_k_ref(clients, res, extra_args.k)
+            elif 'token' in extra_args.trust:
+                logits = [[] for _ in range(len(clients))]
+                for model, _, _ in clients:
+                    model.eval()
+                for j in range(4):
+                    print(f'\r{j} batch ref', end='')
+                    x, y = get_batch(data['ref'], sequence_length, batch_size, extra_args.device)
+                    for id, (model, _, _) in enumerate(clients):
+                        with type_ctx:
+                            outputs = model(x, get_logits=True)
+                        logits_out = outputs['logits'].detach()
+                        v, _ = torch.topk(logits_out, 100)
+                        logits_out[logits_out < v[:, :, [-1]]] = 0
+                        logits_out = logits_out.to_sparse_coo()
+                        logits[id].append(logits_out)
+                for model, _, _ in clients:
+                    model.train()
+
+                res = torch.zeros((num_clients, num_clients))
+                for id1 in range(len(clients)):
+                    for id2 in range(len(clients)):
+                        sim = 0
+                        for j in range(4):
+                            sim += torch.sum(torch.abs(logits[id1][j] - logits[id2][j])).item()
+                        res[id1, id2] = sim / (4 * batch_size)
+
+                res = F.normalize(res, p=1, dim=1)
+                res = -res * 10
+                if extra_args.trust == 'dynamic-token':
+                    __average_dynamic_token(clients, res)
+                elif extra_args.trust == 'dynamic-thresh-token':
+                    __average_dynamic_threshold_token(clients, res)
+                elif extra_args.trust == 'dynamic-top-k-token':
+                    __average_dynamic_top_k_token(clients, res, extra_args.k)
 
         # from here it's only evaluation code, all the training is above
         t1 = time.time()
@@ -123,3 +182,187 @@ def train_lora(clients: List[List[nn.Module | Optimizer | LRScheduler]], data: D
         t0 = time.time()
 
     return stats
+
+
+def __weighted_average(clients, trust_weights) -> None:
+    print(type(trust_weights), np.array(trust_weights), type(np.array(trust_weights)))
+    wandb.log({'Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
+
+    # old
+    weights = {}
+    for id, client in enumerate(clients):
+        for name, param in client[0].named_parameters():
+            if param.requires_grad:
+                if name in weights:
+                    weights[name][id] = param.data.clone()
+                else:
+                    weights[name] = {}
+                    weights[name][id] = param.data.clone()
+
+    for idx, client in enumerate(clients):
+        model, _, _ = client
+
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                val = torch.zeros_like(param)
+                for i in range(len(clients)):
+                    val += trust_weights[idx, i] * weights[name][i]
+                param.data = val
+
+    del weights
+
+
+def __average(clients) -> None:
+    trust_weights = torch.zeros((len(clients), len(clients)))
+    trust_weights = torch.fill(trust_weights, 1 / len(clients))
+    __weighted_average(clients, trust_weights)
+
+
+def __average_static(clients, dataset) -> None:
+    trust_weights = torch.zeros((len(clients), len(clients)))
+    for id_1 in range(len(clients)):
+        for id_2 in range(len(clients)):
+            if id_2 <= id_1:
+                score = 0
+                if dataset == 'agnews_mixed':
+                    if id_1 == id_2:
+                        score = 3 / 4
+                    elif (id_2 // 2) == (id_1 // 2):
+                        score = 1 / 4
+                if dataset == 'agnews_specific':
+                    if (id_2 // 2) == (id_1 // 2):
+                        score = 4 / len(clients)
+                if dataset == 'three_multi_specific':
+                    if (id_2 % 3) == (id_1 % 3):
+                        score = 3 / len(clients)
+                if dataset == 'three_multi_mixed':
+                    if (id_1 % 3) == 0:
+                        if id_2 % 3 == 0:
+                            score = 5 / (len(clients) * 3)
+                        elif id_2 % 3 == 1:
+                            score = 3 / (len(clients) * 3)
+                        else:
+                            score = 1 / (len(clients) * 3)
+                    elif (id_1 % 3) == 1:
+                        if id_2 % 3 == 0:
+                            score = 1 / (len(clients) * 3)
+                        elif id_2 % 3 == 1:
+                            score = 5 / (len(clients) * 3)
+                        else:
+                            score = 3 / (len(clients) * 3)
+                    else:
+                        if id_2 % 3 == 0:
+                            score = 3 / (len(clients) * 3)
+                        elif id_2 % 3 == 1:
+                            score = 1 / (len(clients) * 3)
+                        else:
+                            score = 5 / (len(clients) * 3)
+                if dataset == 'github_wiki_specific':
+                    if (id_2 % 2) == (id_1 % 2):
+                        score = 2 / len(clients)
+                if dataset == 'github_wiki_mixed':
+                    if (id_1 % 2) == (id_2 % 2):
+                        score = 3 / (len(clients) * 2)
+                    else:
+                        score = 1 / (len(clients) * 2)
+
+                trust_weights[id_1, id_2] = score
+                trust_weights[id_2, id_1] = score
+    __weighted_average(clients, trust_weights)
+
+
+def similarity_weights(client1, client2,
+                       similarity: Callable[[Tensor, Tensor], Tensor] = F.cosine_similarity):
+    score = 0
+    total_size = 0
+    for (name1, param1), (name2, param2) in zip(client1.named_parameters(), client2.named_parameters()):
+        if name1 != name2:
+            raise NameError(f'Should be the same: {name1} != {name2}')
+        if param1.requires_grad:
+            sim = similarity(param1, param2)
+            total_size += sim.size(0)
+            score += torch.sum(sim).detach().item()
+
+    return score / total_size
+
+
+def clients_similarity(clients,
+                       sim_func,
+                       similarity: Callable[[Tensor, Tensor], Tensor] = F.cosine_similarity) -> Tensor:
+    trust_weight = torch.zeros((len(clients), len(clients)))
+    for idx1, (model1, _, _) in enumerate(clients):
+        for idx2, (model2, _, _) in enumerate(clients):
+            if idx2 <= idx1:
+                score = sim_func(model1, model2, similarity)
+                trust_weight[idx1, idx2] = score
+                trust_weight[idx2, idx1] = score
+    return trust_weight
+
+
+def __average_dynamic(clients) -> None:
+    trust_weights = clients_similarity(clients, similarity_weights)
+    trust_weights = F.softmax(trust_weights, dim=1)
+    __weighted_average(clients, trust_weights)
+
+
+def __average_dynamic_threshold(clients) -> None:
+    trust_weights = clients_similarity(clients, similarity_weights)
+    topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
+    trust_weights[trust_weights <= 0.5] = -1e9
+    trust_weights.scatter_(-1, topk_indices, topk_values)
+    trust_weights = F.softmax(trust_weights, dim=1)
+    __weighted_average(clients, trust_weights)
+
+
+def __average_dynamic_top_k(clients, k) -> None:
+    trust_weights = clients_similarity(clients, similarity_weights)
+    topk_values, topk_indices = torch.topk(trust_weights, k, dim=-1)
+    mask = torch.zeros_like(trust_weights)
+    mask = torch.fill(mask, -1e9)
+    mask.scatter_(-1, topk_indices, topk_values)
+    trust_weights = F.softmax(mask, dim=1)
+    __weighted_average(clients, trust_weights)
+
+
+def __average_dynamic_ref(clients, trust_weights) -> None:
+    trust_weights = F.softmax(trust_weights, dim=1)
+    __weighted_average(clients, trust_weights)
+
+
+def __average_dynamic_threshold_ref(clients, trust_weights) -> None:
+    topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
+    trust_weights[trust_weights <= -30] = -1e9
+    trust_weights.scatter_(-1, topk_indices, topk_values)
+    trust_weights = F.softmax(trust_weights, dim=1)
+    __weighted_average(clients, trust_weights)
+
+
+def __average_dynamic_top_k_ref(clients, trust_weights, k) -> None:
+    topk_values, topk_indices = torch.topk(trust_weights, k, dim=-1)
+    mask = torch.zeros_like(trust_weights)
+    mask = torch.fill(mask, -1e9)
+    mask.scatter_(-1, topk_indices, topk_values)
+    trust_weights = F.softmax(mask, dim=1)
+    __weighted_average(clients, trust_weights)
+
+
+def __average_dynamic_token(clients, trust_weights) -> None:
+    trust_weights = F.softmax(trust_weights, dim=1)
+    __weighted_average(clients, trust_weights)
+
+
+def __average_dynamic_threshold_token(clients, trust_weights) -> None:
+    topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
+    trust_weights[trust_weights <= -50] = -1e9
+    trust_weights.scatter_(-1, topk_indices, topk_values)
+    trust_weights = F.softmax(trust_weights, dim=1)
+    __weighted_average(clients, trust_weights)
+
+
+def __average_dynamic_top_k_token(clients, trust_weights, k) -> None:
+    topk_values, topk_indices = torch.topk(trust_weights, k, dim=-1)
+    mask = torch.zeros_like(trust_weights)
+    mask = torch.fill(mask, -1e9)
+    mask.scatter_(-1, topk_indices, topk_values)
+    trust_weights = F.softmax(mask, dim=1)
+    __weighted_average(clients, trust_weights)

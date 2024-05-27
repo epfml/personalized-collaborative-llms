@@ -5,7 +5,6 @@ import json
 import os
 import random
 import sys
-from argparse import Namespace
 
 import numpy as np
 import torch
@@ -18,14 +17,14 @@ from models.utils import get_model
 from optim.lora import train_lora
 
 
-def get_args() -> Namespace:
+def get_args():
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument('--config_format', choices=config.registered_formats())
     args, rem_args = parser.parse_known_args()
     return config.parse_args_with_format(format=args.config_format, base_parser=parser, args=rem_args, namespace=args)
 
 
-def get_exp_name(args: Namespace) -> str:
+def get_exp_name(args):
     """ Returns the name of the experiment, used for saving models and wandb. """
     exp_name = f"{args.model}_lr{args.lr}_bs{args.batch_size}x{args.acc_steps}_{args.world_size}nodes"
     if args.wandb_run_prefix != 'none':
@@ -38,7 +37,7 @@ def get_exp_name(args: Namespace) -> str:
     return exp_name
 
 
-def main(args: Namespace) -> None:
+def main(args):
     torch.backends.cuda.matmul.allow_tf32 = True  # allows us to make sure we're able to use tensor float32 during training
     torch.backends.cudnn.allow_tf32 = True
 
@@ -127,7 +126,7 @@ def main(args: Namespace) -> None:
     stats = train(clients, data, args.iterations, args.acc_steps, args.batch_size, args.sequence_length,
                   eval_freq=args.eval_freq,
                   distributed_backend=distributed_backend,
-                  extra_args=args)
+                  ckpt_path=f'{ckpt_path}/ckpt.pt', extra_args=args)
 
     args.device = None
     args.dtype = None

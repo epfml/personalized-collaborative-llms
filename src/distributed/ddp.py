@@ -1,10 +1,7 @@
-import math
 import os
-from argparse import Namespace
 from contextlib import contextmanager
-from typing import List
 
-from torch import nn
+import math
 from torch.distributed import init_process_group, destroy_process_group, get_world_size
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -13,14 +10,14 @@ from .backend import DistributedBackend
 
 class DataParallelDistributedBackend(DistributedBackend):
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args):
         self.rank = int(os.environ.get('RANK', -1))
         assert self.rank != -1, "DDP backend can not be used without rank"
         assert "cuda" in args.device, "DDP backend can not be used on non-CUDA devices"
         init_process_group(backend=args.distributed_backend)
         self.local_rank = int(os.environ['LOCAL_RANK'])
 
-    def get_adjusted_args_for_process(self, args: Namespace) -> Namespace:
+    def get_adjusted_args_for_process(self, args):
         effective_batch_size = args.batch_size * args.acc_steps
         world_size = self.get_world_size()
         if effective_batch_size % world_size != 0:
@@ -34,11 +31,11 @@ class DataParallelDistributedBackend(DistributedBackend):
         args.seed = args.seed + self.local_rank
         return args
 
-    def transform_model(self, model: nn.Module) -> DDP:
+    def transform_model(self, model):
         return DDP(model, device_ids=[self.local_rank])
 
     @contextmanager
-    def get_context_for_microstep_forward(self, model: nn.Module, microstep_idx: int, gradient_accumulation_steps: int):
+    def get_context_for_microstep_forward(self, model, microstep_idx, gradient_accumulation_steps):
         model.require_backward_grad_sync = (
                 microstep_idx == gradient_accumulation_steps - 1)
         yield
@@ -46,14 +43,14 @@ class DataParallelDistributedBackend(DistributedBackend):
     def is_master_process(self) -> bool:
         return self.rank == 0
 
-    def get_raw_model(self, model: DDP) -> nn.Module:
+    def get_raw_model(self, model):
         return model.module
 
-    def translate_model_parameter_name_for_node(self, parameter_name: str) -> List[str]:
+    def translate_model_parameter_name_for_node(self, parameter_name):
         return [f'module.{parameter_name}']
 
-    def get_world_size(self) -> int:
+    def get_world_size(self):
         return get_world_size()
 
-    def finalize(self) -> None:
+    def finalize(self):
         destroy_process_group()

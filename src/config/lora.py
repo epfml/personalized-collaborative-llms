@@ -1,11 +1,8 @@
-from argparse import ArgumentParser, Namespace
-from typing import List
-
 import distributed
 import torch
 
 
-def parse_args(base_parser: ArgumentParser, args: List[str], namespace: Namespace) -> Namespace:
+def parse_args(base_parser, args, namespace):
     parser = base_parser
     # General training params
     parser.add_argument('--num_clients', required=True, type=int)
@@ -26,7 +23,7 @@ def parse_args(base_parser: ArgumentParser, args: List[str], namespace: Namespac
     parser.add_argument('--grad_clip', default=0.0, type=float)  # default value is 1.0 in NanoGPT
     # Dataset params
     parser.add_argument('--dataset', required=True, type=str,
-                        choices=['wikitext', 'wiki_split_de', 'wiki_split_it', 'wiki_split_fr', 'wiki_split_en',
+                        choices=['wikitext', 'split_wiki_de', 'split_wiki_it', 'split_wiki_fr', 'split_wiki_en',
                                  'agnews_mixed', 'agnews_specific',
                                  'three_multi_specific', 'three_multi_mixed',
                                  'github_wiki_specific', 'github_wiki_mixed',

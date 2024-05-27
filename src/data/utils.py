@@ -1,52 +1,44 @@
-import os
-from typing import Dict, List
-
 import numpy as np
+from typing import Dict
 
-WIKI_PATH_EN = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.en")
-WIKI_PATH_FR = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.fr")
-WIKI_PATH_IT = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.it")
-WIKI_PATH_DE = os.path.join(os.path.dirname(__file__), "wikipedia/20220301.de")
-
-from .agnews import get_agnews_data
+from .agnews_mixed import get_agnews_mixed_data
+from .agnews_specific import get_agnews_specific_data
 from .fed_cc_news import get_fed_cc_news
-from .github_wiki import get_github_wikitext_data
-from .wikitext_split import get_split_multi_data
-from .three_multi import get_three_multi_data
+from .github_wiki_mixed import get_github_wikitext_data_mixed
+from .github_wiki_specific import get_github_wikitext_data_specific
+from .split_wikitext import get_split_multi_data
+from .three_multi_mixed import get_three_multi_data_mixed
+from .three_multi_specific import get_three_multi_data_specific
 from .wikitext import get_wikitext_data
 
 
-def get_dataset(args) -> Dict[str, List[np.ndarray] | np.ndarray]:
+def get_dataset(args) -> Dict[str, np.ndarray]:
     """ Fetch the right dataset given by the args.dataset parameter. The logic for each dataset is
      contained in its own python file. The expected format at the moment is a dictionary of np.memmap
-     containing up to three keys: "train" and "val", and "ref", corresponding to the tokenized training,
-     validation and reference data. """
-
-    if args.dataset == "fed_cc_news":
-        return get_fed_cc_news()
-
-    elif args.dataset == "agnews_mixed":
-        return get_agnews_data("mixed")
-    elif args.dataset == "agnews_specific":
-        return get_agnews_data("specific")
-    elif args.dataset == "three_multi_specific":
-        return get_three_multi_data("specific")
-    elif args.dataset == "three_multi_mixed":
-        return get_three_multi_data("mixed")
-    elif args.dataset == "github_wiki_specific":
-        return get_github_wikitext_data("specific")
-    elif args.dataset == "github_wiki_mixed":
-        return get_github_wikitext_data("mixed")
-
-    elif args.dataset == "wikitext":
+     containing two keys: 'train' and 'val', corresponding to the tokenized training and validation data. """
+    if args.dataset == 'wikitext':
         return get_wikitext_data()
-    elif args.dataset == "wiki_split_fr":
-        return get_split_multi_data("fr")
-    elif args.dataset == "wiki_split_it":
-        return get_split_multi_data("it")
-    elif args.dataset == "wiki_split_de":
-        return get_split_multi_data("de")
-    elif args.dataset == "wiki_split_en":
-        return get_split_multi_data("en")
+    if args.dataset == 'agnews_mixed':
+        return get_agnews_mixed_data()
+    if args.dataset == 'agnews_specific':
+        return get_agnews_specific_data()
+    if args.dataset == 'three_multi_specific':
+        return get_three_multi_data_specific()
+    if args.dataset == 'three_multi_mixed':
+        return get_three_multi_data_mixed()
+    if args.dataset == 'github_wiki_specific':
+        return get_github_wikitext_data_specific()
+    if args.dataset == 'github_wiki_mixed':
+        return get_github_wikitext_data_mixed()
+    if args.dataset == 'split_wiki_fr':
+        return get_split_multi_data('fr')
+    if args.dataset == 'split_wiki_it':
+        return get_split_multi_data('it')
+    if args.dataset == 'split_wiki_de':
+        return get_split_multi_data('de')
+    if args.dataset == 'split_wiki_en':
+        return get_split_multi_data('en')
+    if args.dataset == 'fed_cc_news':
+        return get_fed_cc_news()
     else:
-        raise NotImplementedError(f"Unknown dataset key {args.dataset}")
+        raise NotImplementedError(f"Unknown dataset key '{args.dataset}'")

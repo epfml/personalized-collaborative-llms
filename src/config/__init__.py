@@ -1,6 +1,3 @@
-from argparse import Namespace, ArgumentParser
-from typing import List
-
 from . import lora
 
 CONFIG_FORMAT_TO_MODULE_MAP = {
@@ -8,10 +5,9 @@ CONFIG_FORMAT_TO_MODULE_MAP = {
 }
 
 
-def parse_args_with_format(format: str, base_parser: ArgumentParser, args: List[str],
-                           namespace: Namespace) -> Namespace:
+def parse_args_with_format(format, base_parser, args, namespace):
     return CONFIG_FORMAT_TO_MODULE_MAP[format].parse_args(base_parser, args, namespace)
 
 
-def registered_formats() -> dict.keys:
+def registered_formats():
     return CONFIG_FORMAT_TO_MODULE_MAP.keys()

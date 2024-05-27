@@ -1,10 +1,7 @@
-from argparse import Namespace
-from typing import Union
-
 from .lora import GPTLoRA
 
 
-def get_model(args: Namespace) -> Union[GPTLoRA]:
+def get_model(args):
     """ Return the right model """
     if args.model == 'lora':
         if args.use_pretrained != 'none':  # Not use to resume training from checkpoint but to finetune use lora
