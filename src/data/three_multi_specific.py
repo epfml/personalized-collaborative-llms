@@ -76,8 +76,8 @@ def get_three_multi_data_specific(token_train_size: int):
 
         ref_tokenized.tofile(os.path.join(NEW_MULTI_DATA_PATH, f'ref.bin'))
 
-        del traindata, testdata, ref_data
-        del traintext, testtext, reftext, raw_tokenized_eval, raw_tokenized_train, raw_tokenized_ref, train_tokenized, eval_tokenized, ref_tokenized
+        del ref_data
+        del train_tokenized, eval_tokenized, ref_tokenized
         print("completed the tokenization process!")
 
     train_data = []
