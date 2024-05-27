@@ -58,7 +58,7 @@ def main(args):
     data = get_dataset(args)
     print([arr.shape for arr in data['train']])
     print([arr.shape for arr in data['val']])
-    print(data['val'].shape)
+    print(data['ref'].shape)
 
     clients = []
 
