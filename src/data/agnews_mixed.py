@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 import tiktoken
 import torchtext
 
@@ -12,6 +13,7 @@ def get_agnews_mixed_data():
     if not os.path.exists(AGNEWS_DATA_PATH):
         os.makedirs(AGNEWS_DATA_PATH, exist_ok=True)
         print("downloading data and tokenizing (1-2 min)")
+
         trainset, testset = torchtext.datasets.AG_NEWS(root=AGNEWS_DATA_PATH + "rawdata")
 
         trainlabel, traintext = list(zip(*trainset))
@@ -55,6 +57,14 @@ def get_agnews_mixed_data():
 
             train_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'train_{i}.bin'))
             eval_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'val_{i}.bin'))
+
+        df = pd.read_csv("src/data/agnews_ref.csv", sep=";")
+        df = df[['category', 'desc']]
+
+        raw_tokenized_ref = tokenizer.encode_ordinary(' '.join(df.desc))
+        ref_tokenized = np.array(raw_tokenized_ref, dtype=np.uint16)
+        ref_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'ref.bin'))
+
         print("completed the tokenization process!")
 
     train_data = []
@@ -63,4 +73,6 @@ def get_agnews_mixed_data():
         train_data.append(np.memmap(os.path.join(AGNEWS_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(np.memmap(os.path.join(AGNEWS_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
 
-    return {'train': train_data, 'val': val_data}
+    ref_data = np.memmap(os.path.join(AGNEWS_DATA_PATH, f'ref.bin'), dtype=np.uint16, mode='r')
+
+    return {'train': train_data, 'val': val_data, 'ref': ref_data}

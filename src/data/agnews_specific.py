@@ -55,6 +55,14 @@ def get_agnews_specific_data():
 
             train_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'train_{i}.bin'))
             eval_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'val_{i}.bin'))
+
+        df = pd.read_csv("src/data/agnews_ref.csv", sep=";")
+        df = df[['category', 'desc']]
+
+        raw_tokenized_ref = tokenizer.encode_ordinary(' '.join(df.desc))
+        ref_tokenized = np.array(raw_tokenized_ref, dtype=np.uint16)
+        ref_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'ref.bin'))
+
         print("completed the tokenization process!")
 
     train_data = []
@@ -63,4 +71,6 @@ def get_agnews_specific_data():
         train_data.append(np.memmap(os.path.join(AGNEWS_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(np.memmap(os.path.join(AGNEWS_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
 
-    return {'train': train_data, 'val': val_data}
+    ref_data = np.memmap(os.path.join(AGNEWS_DATA_PATH, f'ref.bin'), dtype=np.uint16, mode='r')
+
+    return {'train': train_data, 'val': val_data, 'ref': ref_data}

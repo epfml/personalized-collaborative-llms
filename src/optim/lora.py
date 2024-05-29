@@ -177,7 +177,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
                     model.train()
         for idx, c in enumerate(clients):
             model, _, _ = c
-            torch.save(model.state_dict(), f'saves/{idx}_{itr[-1]}')
+            # torch.save(model.state_dict(), f'saves/{idx}_{itr[-1]}')
         t0 = time.time()
 
     return stats
