@@ -7,4 +7,5 @@ import sys
 if __name__ == '__main__':
     args = Namespace()
     args.dataset = sys.argv[1]
+    args.train_size = sys.argv[2]
     _ = get_dataset(args)
