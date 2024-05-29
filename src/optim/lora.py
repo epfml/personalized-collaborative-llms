@@ -100,7 +100,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
                     model.eval()
                 for j in range(4):
                     print(f'\r{j} batch ref', end='')
-                    x, y = get_batch(data['ref'], sequence_length, batch_size, extra_args.device)
+                    x, y = get_batch(data['ref'][j], sequence_length, batch_size, extra_args.device)
                     for id, (model, _, _) in enumerate(clients):
                         with type_ctx:
                             outputs = model(x, get_logits=True)
