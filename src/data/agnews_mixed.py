@@ -62,7 +62,7 @@ def get_agnews_mixed_data():
             df = pd.read_csv("src/data/agnews_ref.csv", sep=";")
             df = df[['category', 'desc']]
 
-            raw_tokenized_ref = tokenizer.encode_ordinary(' '.join(df[df.desc == (i + 1)].desc))
+            raw_tokenized_ref = tokenizer.encode_ordinary(' '.join(df[df.category == (i + 1)].desc))
             ref_tokenized = np.array(raw_tokenized_ref, dtype=np.uint16)
             ref_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'ref_{i}.bin'))
 
