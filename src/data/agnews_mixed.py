@@ -78,4 +78,4 @@ def get_agnews_mixed_data():
     for i in range(4):
         ref_data.append(np.memmap(os.path.join(AGNEWS_DATA_PATH, f'ref_{i}.bin'), dtype=np.uint16, mode='r'))
 
-    return {'train': train_data, 'val': val_data, 'ref': val_data}
+    return {'train': train_data, 'val': val_data, 'ref': ref_data}
