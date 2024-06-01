@@ -100,7 +100,7 @@ def get_github_wikitext_data_specific():
             eval_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
 
         for i in range(num_clients // 2, num_clients):
-            print(f'{i}: {traindata[i].shape} train, {testdata[i].shape} eval, {ftdata[i].shape} ft')
+            print(f'{i}: {traindata[i].shape} train, {testdata[i].shape} eval, {ftdata[i - (num_clients // 2)].shape} ft')
 
             traindata[i].tofile(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'))
             testdata[i].tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
