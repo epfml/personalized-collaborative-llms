@@ -52,6 +52,7 @@ def get_github_wikitext_data_specific():
 
         traindata = []
         testdata = []
+        ftdata = []
         end = -1
         for i in range(num_clients // 2):
             start = i * 1500  # 800000 tokens
@@ -70,36 +71,40 @@ def get_github_wikitext_data_specific():
         refdata_git = git_data[index: index + 500000]
         index += 20000000
 
+        split = 84000
         for i in range(num_clients // 2):
-            traindata.append(git_data[index: index + 840000])
-            index += 840000
+            traindata.append(git_data[index: index + 840000 - split])
+            index += 840000 - split
+            ftdata.append(git_data[index: index + split])
+            index += split
             testdata.append(git_data[index: index + 160000])
             index += 160000
 
         for i in range(num_clients // 2):
             traintext = ' '.join(traindata[i])
             testtext = ' '.join(testdata[i])
-            raw_tokenized_train = tokenizer.encode_ordinary(traintext)[:840000]
+
+            tmp = tokenizer.encode_ordinary(traintext)
+            raw_tokenized_train = tmp[:840000 - split]
+            raw_tokenized_ft = tmp[840000 - split:840000]
             raw_tokenized_eval = tokenizer.encode_ordinary(testtext)[:160000]
 
             train_tokenized = np.array(raw_tokenized_train, dtype=np.uint16)
+            ft_tokenized = np.array(raw_tokenized_ft, dtype=np.uint16)
             eval_tokenized = np.array(raw_tokenized_eval, dtype=np.uint16)
 
-            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval ')
+            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval, {ft_tokenized.shape} ft')
 
             train_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'))
+            ft_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'))
             eval_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
 
         for i in range(num_clients // 2, num_clients):
-            print(f'{i}: {traindata[i].shape} train, {testdata[i].shape} eval ')
+            print(f'{i}: {traindata[i].shape} train, {testdata[i].shape} eval, {ftdata[i].shape} ft')
 
             traindata[i].tofile(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'))
             testdata[i].tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
-
-        ref_tokenized = np.concatenate([ref_tokenized, refdata_git])
-        print(f'{ref_tokenized.shape} ref')
-
-        ref_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ref.bin'))
+            ftdata[i - (num_clients // 2)].tofile(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'))
 
         del traindata, testdata, refdata_git, refdata_wiki
         del traintext, testtext, reftext, raw_tokenized_eval, raw_tokenized_train, raw_tokenized_ref, train_tokenized, eval_tokenized, ref_tokenized
@@ -107,14 +112,17 @@ def get_github_wikitext_data_specific():
 
     train_data = []
     val_data = []
+    ft_data = []
     for i in range(0, num_clients // 2):
         train_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
+        ft_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'), dtype=np.uint16, mode='r'))
         train_data.append(
             np.memmap(os.path.join(MULTI_DATA_PATH, f'train_{i + (num_clients // 2)}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(
             np.memmap(os.path.join(MULTI_DATA_PATH, f'val_{i + (num_clients // 2)}.bin'), dtype=np.uint16, mode='r'))
+        ft_data.append(
+            np.memmap(os.path.join(MULTI_DATA_PATH, f'ft_{i + (num_clients // 2)}.bin'), dtype=np.uint16, mode='r'))
 
-    ref_data = np.memmap(os.path.join(MULTI_DATA_PATH, f'ref.bin'), dtype=np.uint16, mode='r')
 
-    return {'train': train_data, 'val': val_data, 'ref': ref_data}
+    return {'train': train_data, 'val': val_data, 'ft': ft_data}

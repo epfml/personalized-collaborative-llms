@@ -60,42 +60,47 @@ def get_three_multi_data_mixed():
             raw_tokenized_ref = tokenizer.encode_ordinary(reftext)
             ref_data.append(np.array(raw_tokenized_ref, dtype=np.uint16)[:300000])
 
+        split_low = 21000
+        split_high = 63000
         for i in range(num_clients):
             traintext = ' '.join(traindata[i])
             testtext = ' '.join(testdata[i])
-            raw_tokenized_train = tokenizer.encode_ordinary(traintext)[:630000]
+            tmp = tokenizer.encode_ordinary(traintext)
+            raw_tokenized_train = tmp[:630000 - split_high]
             raw_tokenized_eval = tokenizer.encode_ordinary(testtext)[:120000]
+            raw_tokenized_ft = tmp[630000 - split_high:630000]
 
             traintext = ' '.join(traindata[num_clients + ((i + 1) % num_clients)])
             testtext = ' '.join(testdata[num_clients + ((i + 1) % num_clients)])
-            raw_tokenized_train.extend(tokenizer.encode_ordinary(traintext)[:210000])
+            tmp = tokenizer.encode_ordinary(traintext)
+            raw_tokenized_train.extend(tmp[:210000 - split_low])
             raw_tokenized_eval.extend(tokenizer.encode_ordinary(testtext)[:40000])
+            raw_tokenized_ft.extend(tmp[210000 - split_low:210000])
 
             train_tokenized = np.array(raw_tokenized_train, dtype=np.uint16)
             eval_tokenized = np.array(raw_tokenized_eval, dtype=np.uint16)
+            ft_tokenized = np.array(raw_tokenized_ft, dtype=np.uint16)
 
-            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval ')
+            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval, {ft_tokenized.shape} eval')
 
             train_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'))
             eval_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
+            ft_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'))
 
-        ref_tokenized = np.concatenate(ref_data)
-
-        print(f'{ref_tokenized.shape} ref')
-
-        ref_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ref.bin'))
 
         del traindata, testdata, ref_data
-        del traintext, testtext, reftext, raw_tokenized_eval, raw_tokenized_train, raw_tokenized_ref, train_tokenized, eval_tokenized, ref_tokenized
+        del traintext, testtext, reftext, raw_tokenized_eval, raw_tokenized_train, raw_tokenized_ref, train_tokenized, eval_tokenized
         print("completed the tokenization process!")
 
     train_data = []
     val_data = []
+    ft_data = []
 
     for i in range(num_clients):
         train_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
+        ft_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'), dtype=np.uint16, mode='r'))
 
-    ref_data = np.memmap(os.path.join(MULTI_DATA_PATH, f'ref.bin'), dtype=np.uint16, mode='r')
 
-    return {'train': train_data, 'val': val_data, 'ref': ref_data}
+
+    return {'train': train_data, 'val': val_data, 'ft': ft_data}

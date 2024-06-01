@@ -70,38 +70,46 @@ def get_github_wikitext_data_mixed():
         refdata_git = git_data[index: index + 500000]
         index += 20000000
 
+        split_high = 63000
+        split_low = 21000
         for i in range(num_clients):
             traintext = ' '.join(traindata[i])
             testtext = ' '.join(testdata[i])
             if num_clients % 2 == 0:
-                raw_tokenized_train = tokenizer.encode_ordinary(traintext)[:630000]
+                tmp = tokenizer.encode_ordinary(traintext)
+                raw_tokenized_train = tmp[:630000 - split_high]
+                raw_tokenized_ft = tmp[630000 - split_high:630000]
                 raw_tokenized_eval = tokenizer.encode_ordinary(testtext)[:120000]
-                git_train = git_data[index: index + 210000]
-                index += 210000
+                git_train = git_data[index: index + 210000 - split_low]
+                index += 210000 - split_low
+                git_ft = git_data[index: index + split_low]
+                index += split_low
                 git_test = git_data[index: index + 40000]
                 index += 40000
             else:
-                raw_tokenized_train = tokenizer.encode_ordinary(traintext)[:210000]
+                tmp = tokenizer.encode_ordinary(traintext)
+                raw_tokenized_train = tmp[:210000 - split_low]
                 raw_tokenized_eval = tokenizer.encode_ordinary(testtext)[:40000]
-                git_train = git_data[index: index + 630000]
-                index += 630000
+                raw_tokenized_ft = tmp[210000 - split_low:210000]
+                git_train = git_data[index: index + 630000 - split_high]
+                index += 630000 - split_high
+                git_ft = git_data[index: index + split_high]
+                index += split_high
                 git_test = git_data[index: index + 120000]
                 index += 120000
 
             train_tokenized = np.array(raw_tokenized_train, dtype=np.uint16)
             eval_tokenized = np.array(raw_tokenized_eval, dtype=np.uint16)
+            ft_tokenized = np.array(raw_tokenized_ft, dtype=np.uint16)
             train_tokenized = np.concatenate([train_tokenized, git_train])
             eval_tokenized = np.concatenate([eval_tokenized, git_test])
+            ft_tokenized = np.concatenate([ft_tokenized, git_ft])
 
-            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval ')
+            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval, {ft_tokenized.shape} ft')
 
             train_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'))
             eval_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
-
-        ref_tokenized = np.concatenate([ref_tokenized, refdata_git])
-        print(f'{ref_tokenized.shape} ref')
-
-        ref_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ref.bin'))
+            ft_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'))
 
         del traindata, testdata, refdata_git, refdata_wiki
         del traintext, testtext, reftext, raw_tokenized_eval, raw_tokenized_train, raw_tokenized_ref, train_tokenized, eval_tokenized, ref_tokenized
@@ -109,10 +117,10 @@ def get_github_wikitext_data_mixed():
 
     train_data = []
     val_data = []
+    ft_data = []
     for i in range(num_clients):
         train_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
+        ft_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'), dtype=np.uint16, mode='r'))
 
-    ref_data = np.memmap(os.path.join(MULTI_DATA_PATH, f'ref.bin'), dtype=np.uint16, mode='r')
-
-    return {'train': train_data, 'val': val_data, 'ref': ref_data}
+    return {'train': train_data, 'val': val_data, 'ft': ft_data}

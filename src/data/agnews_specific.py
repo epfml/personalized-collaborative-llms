@@ -49,18 +49,23 @@ def get_agnews_specific_data():
             testtext = ' '.join(testdata[i])
             raw_tokenized_train = tokenizer.encode_ordinary(traintext)
             raw_tokenized_eval = tokenizer.encode_ordinary(testtext)
+            split = int(len(raw_tokenized_train) * 0.9)
 
-            train_tokenized = np.array(raw_tokenized_train, dtype=np.uint16)
+            train_tokenized = np.array(raw_tokenized_train[:split], dtype=np.uint16)
             eval_tokenized = np.array(raw_tokenized_eval, dtype=np.uint16)
+            ft_tokenized = np.array(raw_tokenized_train[split:], dtype=np.uint16)
 
             train_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'train_{i}.bin'))
             eval_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'val_{i}.bin'))
+            ft_tokenized.tofile(os.path.join(AGNEWS_DATA_PATH, f'ft_{i}.bin'))
         print("completed the tokenization process!")
 
     train_data = []
     val_data = []
+    ft_data = []
     for i in range(8):
         train_data.append(np.memmap(os.path.join(AGNEWS_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(np.memmap(os.path.join(AGNEWS_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
+        ft_data.append(np.memmap(os.path.join(AGNEWS_DATA_PATH, f'ft_{i}.bin'), dtype=np.uint16, mode='r'))
 
-    return {'train': train_data, 'val': val_data}
+    return {'train': train_data, 'val': val_data, 'ft': ft_data}

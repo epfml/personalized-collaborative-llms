@@ -56,6 +56,9 @@ def main(args):
     print(f"Loading dataset '{args.dataset}'")
 
     data = get_dataset(args)
+    print('train:', list(map(lambda x: x.shape, data['train'])))
+    print('val:', list(map(lambda x: x.shape, data['val'])))
+    print('ft:', list(map(lambda x: x.shape, data['ft'])))
 
     clients = []
 
