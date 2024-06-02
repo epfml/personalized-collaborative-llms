@@ -209,47 +209,46 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
             model, opt, scheduler = clients[i]
             opt.zero_grad(set_to_none=True)
 
-            if itr[i] % eval_freq == 0 or itr[i] == iterations:
-                if distributed_backend.is_master_process():
-                    epoch = substep[i] // num_substeps_per_epoch[i]
+            if distributed_backend.is_master_process():
+                epoch = substep[i] // num_substeps_per_epoch[i]
 
-                    model.eval()
-                    train_loss = loss.detach().cpu().item() * acc_steps
-                    current_lr = scheduler.get_last_lr()[0] if scheduler is not None else extra_args.lr
-                    val_acc, val_loss, val_perplexity = eval(model, data['val'][i], sequence_length, batch_size,
-                                                             extra_args.device, max_num_batches=12, ctx=type_ctx)
+                model.eval()
+                train_loss = loss.detach().cpu().item() * acc_steps
+                current_lr = scheduler.get_last_lr()[0] if scheduler is not None else extra_args.lr
+                val_acc, val_loss, val_perplexity = eval(model, data['val'][i], sequence_length, batch_size,
+                                                         extra_args.device, max_num_batches=12, ctx=type_ctx)
 
-                    print_string = f"{i}: {epoch}/{itr[i]} [train] loss={train_loss:.3f} [val] loss={val_loss:.3f}, pp={val_perplexity:.2f}, acc={val_acc:3f}"
-                    print_string += f" [time per itr] {dt * 1000 / eval_freq:.2f}ms"
-                    if scheduler is not None:
-                        print_string += f" [lr] {current_lr:.5f}"
-                    print(f'\r{print_string}')
+                print_string = f"{i}: {epoch}/{itr[i]} [train] loss={train_loss:.3f} [val] loss={val_loss:.3f}, pp={val_perplexity:.2f}, acc={val_acc:3f}"
+                print_string += f" [time per itr] {dt * 1000 / eval_freq:.2f}ms"
+                if scheduler is not None:
+                    print_string += f" [lr] {current_lr:.5f}"
+                print(f'\r{print_string}')
 
-                    stats['train_loss'][i].append(train_loss)
-                    stats['val_loss'][i].append(val_loss)
-                    stats['val_pp'][i].append(val_perplexity)
-                    stats['val_acc'][i].append(val_acc)
+                stats['train_loss'][i].append(train_loss)
+                stats['val_loss'][i].append(val_loss)
+                stats['val_pp'][i].append(val_perplexity)
+                stats['val_acc'][i].append(val_acc)
 
-                    if extra_args.wandb:
-                        if i == (num_clients - 1):
-                            wandb.log({
-                                f"train/loss_mean": np.mean(
-                                    [stats['train_loss'][i][-1] for i in range(num_clients)]),
-                                f"val/loss_mean": np.mean([stats['val_loss'][i][-1] for i in range(num_clients)]),
-                                f"val/perplexity_mean": np.mean(
-                                    [stats['val_pp'][i][-1] for i in range(num_clients)]),
-                                f"val/acc_mean": np.mean([stats['val_acc'][i][-1] for i in range(num_clients)]),
-                            }, commit=False)
+                if extra_args.wandb:
+                    if i == (num_clients - 1):
                         wandb.log({
-                            f"iter_{i}": itr[i],
-                            f"train/loss_{i}": train_loss,
-                            f"val/loss_{i}": val_loss,
-                            f"val/perplexity_{i}": val_perplexity,
-                            f"val/acc_{i}": val_acc,
-                            f"lr_{i}": current_lr,
-                        }, commit=(i == (num_clients - 1)))
+                            f"train/loss_mean": np.mean(
+                                [stats['train_loss'][i][-1] for i in range(num_clients)]),
+                            f"val/loss_mean": np.mean([stats['val_loss'][i][-1] for i in range(num_clients)]),
+                            f"val/perplexity_mean": np.mean(
+                                [stats['val_pp'][i][-1] for i in range(num_clients)]),
+                            f"val/acc_mean": np.mean([stats['val_acc'][i][-1] for i in range(num_clients)]),
+                        }, commit=False)
+                    wandb.log({
+                        f"iter_{i}": itr[i],
+                        f"train/loss_{i}": train_loss,
+                        f"val/loss_{i}": val_loss,
+                        f"val/perplexity_{i}": val_perplexity,
+                        f"val/acc_{i}": val_acc,
+                        f"lr_{i}": current_lr,
+                    }, commit=(i == (num_clients - 1)))
 
-                    model.train()
+                model.train()
         t0 = time.time()
 
     return stats
