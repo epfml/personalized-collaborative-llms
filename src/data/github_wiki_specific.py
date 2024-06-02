@@ -71,7 +71,7 @@ def get_github_wikitext_data_specific():
         refdata_git = git_data[index: index + 500000]
         index += 20000000
 
-        split = 210000
+        split = 420000
         for i in range(num_clients // 2):
             traindata.append(git_data[index: index + 840000 - split])
             index += 840000 - split

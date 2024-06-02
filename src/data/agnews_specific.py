@@ -49,7 +49,7 @@ def get_agnews_specific_data():
             testtext = ' '.join(testdata[i])
             raw_tokenized_train = tokenizer.encode_ordinary(traintext)
             raw_tokenized_eval = tokenizer.encode_ordinary(testtext)
-            split = int(len(raw_tokenized_train) * 0.75)
+            split = int(len(raw_tokenized_train) * 0.5)
 
             train_tokenized = np.array(raw_tokenized_train[:split], dtype=np.uint16)
             eval_tokenized = np.array(raw_tokenized_eval, dtype=np.uint16)

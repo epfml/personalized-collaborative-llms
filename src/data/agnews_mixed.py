@@ -32,10 +32,10 @@ def get_agnews_mixed_data():
             testtext_perclass_mid.append(len(testtext_perclass[i - 1]) // 4)
 
         ft_split = [
-            [int(traintext_perclass_mid[0] * 0.75), int(len(traintext_perclass[1]) * 0.75)],
-            [int(len(traintext_perclass[0]) * 0.75), int(traintext_perclass_mid[1] * 0.75)],
-            [int(traintext_perclass_mid[2] * 0.75), int(len(traintext_perclass[3]) * 0.75)],
-            [int(len(traintext_perclass[2]) * 0.75), int(traintext_perclass_mid[3] * 0.75)],
+            [int(traintext_perclass_mid[0] * 0.5), int(len(traintext_perclass[1]) * 0.5)],
+            [int(len(traintext_perclass[0]) * 0.5), int(traintext_perclass_mid[1] * 0.5)],
+            [int(traintext_perclass_mid[2] * 0.5), int(len(traintext_perclass[3]) * 0.5)],
+            [int(len(traintext_perclass[2]) * 0.5), int(traintext_perclass_mid[3] * 0.5)],
         ]
 
         traindata = [
