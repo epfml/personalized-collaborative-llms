@@ -70,8 +70,8 @@ def get_github_wikitext_data_mixed():
         refdata_git = git_data[index: index + 500000]
         index += 20000000
 
-        split_high = 63000
-        split_low = 21000
+        split_high = 157500
+        split_low = 52500
         for i in range(num_clients):
             traintext = ' '.join(traindata[i])
             testtext = ' '.join(testdata[i])

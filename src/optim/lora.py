@@ -38,7 +38,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
         clients[i][0].train()
 
     #avg training
-    avg_iter = int(iterations * 9 / 10)
+    avg_iter = int(iterations * 0.75)
     t0 = time.time()
     while itr[-1] < avg_iter:
         for i in range(num_clients):

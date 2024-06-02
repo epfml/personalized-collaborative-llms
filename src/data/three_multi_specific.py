@@ -55,7 +55,7 @@ def get_three_multi_data_specific():
             testdata.append(testtext_perclass[i % 3][start:end])
 
 
-        split = 84000
+        split = 210000
         for i in range(num_clients):
             traintext = ' '.join(traindata[i])
             testtext = ' '.join(testdata[i])

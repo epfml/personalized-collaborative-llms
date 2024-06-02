@@ -60,8 +60,8 @@ def get_three_multi_data_mixed():
             raw_tokenized_ref = tokenizer.encode_ordinary(reftext)
             ref_data.append(np.array(raw_tokenized_ref, dtype=np.uint16)[:300000])
 
-        split_low = 21000
-        split_high = 63000
+        split_low = 52500
+        split_high = 157500
         for i in range(num_clients):
             traintext = ' '.join(traindata[i])
             testtext = ' '.join(testdata[i])
