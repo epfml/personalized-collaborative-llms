@@ -37,6 +37,16 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
     for i in range(num_clients):
         clients[i][0].train()
 
+    global ring_mask
+    ring_mask = torch.zeros((num_clients, num_clients), dtype=torch.bool)
+    for i in range(num_clients):
+        ring_mask[i, i] = True
+        ring_mask[i, (i - 1) % num_clients] = True
+        ring_mask[i, (i + 1) % num_clients] = True
+
+    ring_mask = ~ring_mask
+
+
     t0 = time.time()
     while itr[-1] < iterations:
         for i in range(num_clients):
@@ -268,6 +278,8 @@ def __average_static(clients, dataset) -> None:
 
                 trust_weights[id_1, id_2] = score
                 trust_weights[id_2, id_1] = score
+    trust_weights[ring_mask] = 0.
+    trust_weights /= trust_weights.sum(axis=1, keepdims=True)
     __weighted_average(clients, trust_weights)
 
 
@@ -301,6 +313,7 @@ def clients_similarity(clients,
 
 def __average_dynamic(clients) -> None:
     trust_weights = clients_similarity(clients, similarity_weights)
+    trust_weights[ring_mask] = -1e9
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
 
@@ -310,6 +323,7 @@ def __average_dynamic_threshold(clients) -> None:
     topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
     trust_weights[trust_weights <= 0.5] = -1e9
     trust_weights.scatter_(-1, topk_indices, topk_values)
+    trust_weights[ring_mask] = -1e9
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
 
@@ -320,11 +334,13 @@ def __average_dynamic_top_k(clients, k) -> None:
     mask = torch.zeros_like(trust_weights)
     mask = torch.fill(mask, -1e9)
     mask.scatter_(-1, topk_indices, topk_values)
+    trust_weights[ring_mask] = -1e9
     trust_weights = F.softmax(mask, dim=1)
     __weighted_average(clients, trust_weights)
 
 
 def __average_dynamic_ref(clients, trust_weights) -> None:
+    trust_weights[ring_mask] = -1e9
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
 
@@ -333,6 +349,7 @@ def __average_dynamic_threshold_ref(clients, trust_weights) -> None:
     topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
     trust_weights[trust_weights <= -30] = -1e9
     trust_weights.scatter_(-1, topk_indices, topk_values)
+    trust_weights[ring_mask] = -1e9
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
 
@@ -342,12 +359,14 @@ def __average_dynamic_top_k_ref(clients, trust_weights, k) -> None:
     mask = torch.zeros_like(trust_weights)
     mask = torch.fill(mask, -1e9)
     mask.scatter_(-1, topk_indices, topk_values)
+    trust_weights[ring_mask] = -1e9
     trust_weights = F.softmax(mask, dim=1)
     __weighted_average(clients, trust_weights)
 
 
 def __average_dynamic_token(clients, trust_weights) -> None:
     trust_weights = F.softmax(trust_weights, dim=1)
+    trust_weights[ring_mask] = -1e9
     __weighted_average(clients, trust_weights)
 
 
@@ -355,6 +374,7 @@ def __average_dynamic_threshold_token(clients, trust_weights) -> None:
     topk_values, topk_indices = torch.topk(trust_weights, 2, dim=-1)
     trust_weights[trust_weights <= -50] = -1e9
     trust_weights.scatter_(-1, topk_indices, topk_values)
+    trust_weights[ring_mask] = -1e9
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
 
@@ -364,5 +384,6 @@ def __average_dynamic_top_k_token(clients, trust_weights, k) -> None:
     mask = torch.zeros_like(trust_weights)
     mask = torch.fill(mask, -1e9)
     mask.scatter_(-1, topk_indices, topk_values)
+    trust_weights[ring_mask] = -1e9
     trust_weights = F.softmax(mask, dim=1)
     __weighted_average(clients, trust_weights)
