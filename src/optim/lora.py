@@ -39,10 +39,17 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
 
     global ring_mask
     ring_mask = torch.zeros((num_clients, num_clients), dtype=torch.bool)
-    for i in range(num_clients):
-        ring_mask[i, i] = True
-        ring_mask[i, (i - 1) % num_clients] = True
-        ring_mask[i, (i + 1) % num_clients] = True
+    if "full_star" in  extra_args.dataset:
+        for i in range(num_clients):
+            ring_mask[i, i] = True
+            ring_mask[i, 0] = True
+    elif "deep_star" in  extra_args.dataset:
+        for i in range(num_clients):
+            ring_mask[i, i] = True
+            if i <= 3:
+                ring_mask[i, 0] = True
+            else:
+                ring_mask[i, i - 3] = True
 
     ring_mask = ~ring_mask
 
