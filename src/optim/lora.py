@@ -186,6 +186,7 @@ def __average_dynamic(clients, samples_size) -> None:
     #trust_weights -= trust_weights.min(1, keepdim=True)[0]
     #trust_weights /= trust_weights.max(1, keepdim=True)[0]
     #trust_weights /= trust_weights.sum(dim=1)
+    trust_weights *= 10
     trust_weights = F.softmax(trust_weights, dim=1)
     print(f"Row stochastic trust_weights: {trust_weights}")
     #trust_weights /= samples_size
