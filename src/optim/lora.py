@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import wandb
 from torch import Tensor
+import torch.nn.functional as F
 
 from .utils import eval, get_batch
 
@@ -161,9 +162,9 @@ def __model_dot_product(client1, client2):
         if name1 != name2:
             raise NameError(f'Should be the: {name1} != {name2}')
         if param1.requires_grad:
-            sim = param1 * param2
-            total_params += 1
-            score += torch.sum(sim).detach().item() / (param1.norm().detach().item() * param2.norm().detach().item())
+            sim = F.cosine_similarity(param1, param2)
+            total_params += sim.size(0)
+            score += torch.sum(sim).detach().item()
 
     return score / total_params
 
