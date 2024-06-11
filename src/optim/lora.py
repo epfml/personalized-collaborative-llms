@@ -156,14 +156,16 @@ def __average(clients) -> None:
 
 def __model_dot_product(client1, client2):
     score = 0
+    total_params = 0
     for (name1, param1), (name2, param2) in zip(client1.named_parameters(), client2.named_parameters()):
         if name1 != name2:
             raise NameError(f'Should be the: {name1} != {name2}')
         if param1.requires_grad:
             sim = param1 * param2
-            score += torch.sum(sim).detach().item()
+            total_params += 1
+            score += torch.sum(sim).detach().item() / (param1.norm() * param2.norm())
 
-    return score
+    return score / total_params
 
 
 def __clients_similarity(clients) -> Tensor:
