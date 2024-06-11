@@ -84,6 +84,8 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
                 __average_validation_set(clients, res)
             elif extra_args.trust == 'oracle':
                 __average_oracle(clients, torch.tensor(data['samples_size']))
+            elif extra_args.trust == 'oracle-w-penalizer':
+                __average_oracle(clients, torch.tensor(data['samples_size']))
             elif extra_args.trust == 'oracle-1':
                 __average_oracle(clients, torch.ones(len(clients)))
             else:
@@ -166,7 +168,7 @@ def __weighted_average(clients, trust_weights) -> None:
     del weights
 
 
-def __weighted_average_noised(clients, trust_weights, noise) -> None:
+def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
     wandb.log({'Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
 
     weights = {}
@@ -187,7 +189,7 @@ def __weighted_average_noised(clients, trust_weights, noise) -> None:
                 val = torch.zeros_like(param)
                 for i in range(len(clients)):
                     val += trust_weights[idx, i] * weights[name][i]
-                param.data = val
+                param.data = val + C[idx] * 1 / samples_size[i]
 
     del weights
 
@@ -247,7 +249,13 @@ def __average_oracle(clients, samples_size) -> None:
 
 def __average_oracle_noised(clients, samples_size) -> None:
     trust_weights = __get_oracle(clients, samples_size)
-    __weighted_average_noised(clients, trust_weights)
+    C = (trust_weights.T - trust_weights).sum(axis=1)
+    print(f"C: {C}")
+    C -= C.min()
+    C /= C.max()
+    print(f"Normalized C: {C}")
+    wandb.log({'Contribution vector': json.dumps(np.array(C).tolist())}, commit=False)
+    __weighted_average_noised(clients, trust_weights, C, samples_size)
 
 
 def __average_validation_set(clients, trust_weights) -> None:

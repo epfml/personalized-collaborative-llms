@@ -6,9 +6,11 @@ import torchtext
 
 AGNEWS_DATA_PATH = os.path.join(os.path.dirname(__file__), "datasets/agnews_specific/")
 
-
-# Allocate data to users
 def get_agnews_specific_data():
+    # client's data distribution is 1, 2, 3, 4, 1, 2, 3, 4, ....
+    # client's number of samples should be different
+    samples_size = [250000, 250000, 250000, 50000, 50000, 50000]
+
     if not os.path.exists(AGNEWS_DATA_PATH):
         os.makedirs(AGNEWS_DATA_PATH, exist_ok=True)
         print("downloading data and tokenizing (1-2 min)")
