@@ -183,9 +183,11 @@ def __clients_similarity(clients) -> Tensor:
 def __average_dynamic(clients, samples_size) -> None:
     trust_weights = __clients_similarity(clients)
     print(f"trust_weights: {trust_weights}")
-    trust_weights /= trust_weights.sum(dim=1)
+    #trust_weights /= trust_weights.sum(dim=1)
+    trust_weights -= trust_weights.min(1, keepdim=True)[0]
+    trust_weights /= trust_weights.max(1, keepdim=True)[0]
     print(f"Row stochastic trust_weights: {trust_weights}")
-    trust_weights /= samples_size
-    trust_weights /= trust_weights.sum(dim=1)
+    #trust_weights /= samples_size
+    #trust_weights /= trust_weights.sum(dim=1)
     print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
     __weighted_average(clients, trust_weights)
