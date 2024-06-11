@@ -174,7 +174,7 @@ def __weighted_average(clients, trust_weights) -> None:
 def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
     wandb.log({'Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
 
-    noise = (1 - C) * (100 / samples_size) * torch.normal(0, 1, size=C.size(0))
+    noise = (1 - C) * (100 / samples_size) * torch.normal(0, 1, size=(C.size(0)))
     print(f"noise: {noise}")
 
     weights = {}
