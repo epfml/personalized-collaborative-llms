@@ -33,7 +33,7 @@ def get_exp_name(args):
         exp_name = args.wandb_group + '_' + exp_name
     if 'lora' in args.model:
         exp_name += f'_lora__rank{args.lora_rank}_alpha{args.lora_alpha}_dropout{args.lora_dropout}'
-    exp_name += f'_seed={args.seed}'
+    exp_name += f'_seed{args.seed}_trust{args.trust}'
     return exp_name
 
 
@@ -56,6 +56,10 @@ def main(args):
     print(f"Loading dataset '{args.dataset}'")
 
     data = get_dataset(args)
+
+    print(f"Train sizes: {list(map(lambda x: x.shape, data['train']))}")
+    print(f"Val sizes: {list(map(lambda x: x.shape, data['val']))}")
+    print(f"Samples sizes: {data['samples_size']}")
 
     clients = []
 

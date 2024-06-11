@@ -6,7 +6,7 @@ def parse_args(base_parser, args, namespace):
     parser = base_parser
     # General training params
     parser.add_argument('--num_clients', required=True, type=int)
-    parser.add_argument('--batch_size', default=50, type=int)
+    parser.add_argument('--batch_size', default=5, type=int)
     parser.add_argument('--acc_steps', default=4, type=int)
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--device', default='cuda:0', type=str)
@@ -23,11 +23,7 @@ def parse_args(base_parser, args, namespace):
     parser.add_argument('--grad_clip', default=0.0, type=float)  # default value is 1.0 in NanoGPT
     # Dataset params
     parser.add_argument('--dataset', required=True, type=str,
-                        choices=['wikitext', 'split_wiki_de', 'split_wiki_it', 'split_wiki_fr', 'split_wiki_en',
-                                 'agnews_mixed', 'agnews_specific',
-                                 'three_multi_specific', 'three_multi_mixed',
-                                 'github_wiki_specific', 'github_wiki_mixed',
-                                 'fed_cc_news'])
+                        choices=['wikitext', 'three_multi_specific'])
     parser.add_argument('--vocab_size', default=50304, type=int)
     # Model params
     parser.add_argument('--model', default='lora', choices=['lora'])
@@ -60,7 +56,8 @@ def parse_args(base_parser, args, namespace):
     parser.add_argument('--lora_freeze_all_non_lora', action='store_true')
     parser.add_argument('--lora_allow_embedding', action='store_true')
     # Trust scheme params
-    parser.add_argument('--trust', type=str, default='none', help='none, dynamic, naive, dynamic-thresh')
+    parser.add_argument('--trust', type=str, default='local')
+    parser.add_argument('--fed_avg_ft', type=float, default=0.0)
     parser.add_argument('--trust_freq', type=int, default=1)
     parser.add_argument('--pretraining_rounds', type=int, default=0)
     parser.add_argument('--k', type=int, default=3)
