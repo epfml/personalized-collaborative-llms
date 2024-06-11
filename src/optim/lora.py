@@ -85,7 +85,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
             elif extra_args.trust == 'oracle':
                 __average_oracle(clients, torch.tensor(data['samples_size']))
             elif extra_args.trust == 'oracle-w-penalizer':
-                __average_oracle(clients, torch.tensor(data['samples_size']))
+                __average_oracle_noised(clients, torch.tensor(data['samples_size']))
             elif extra_args.trust == 'oracle-1':
                 __average_oracle(clients, torch.ones(len(clients)))
             else:
