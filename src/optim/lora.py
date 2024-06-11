@@ -195,7 +195,8 @@ def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
                 val = torch.zeros_like(param)
                 for i in range(len(clients)):
                     val += trust_weights[idx, i] * weights[name][i]
-                param.data = val + noise[idx]
+                print(f"var of {name}: {torch.var(weights[name][idx])}")
+                param.data = val + noise[idx] * torch.var(weights[name][idx])
 
     del weights
 
