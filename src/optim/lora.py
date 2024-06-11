@@ -163,7 +163,7 @@ def __model_dot_product(client1, client2):
         if param1.requires_grad:
             sim = param1 * param2
             total_params += 1
-            score += torch.sum(sim).detach().item() / (param1.norm() * param2.norm())
+            score += torch.sum(sim).detach().item() / (param1.norm().detach().item() * param2.norm().detach().item())
 
     return score / total_params
 
