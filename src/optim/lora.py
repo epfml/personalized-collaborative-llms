@@ -69,6 +69,10 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
                 __average(clients)
             elif extra_args.trust == 'weight-sim':
                 __average_dynamic(clients, torch.tensor(data['samples_size']), itr[-1])
+            elif extra_args.trust == 'oracle':
+                __average_oracle(clients, torch.tensor(data['samples_size']))
+            elif extra_args.trust == 'oracle-1':
+                __average_oracle(clients, torch.ones(len(clients)))
             else:
                 raise NotImplementedError(f"Trust method {extra_args.trust} not implemented")
 
@@ -191,5 +195,21 @@ def __average_dynamic(clients, samples_size, iter) -> None:
     print(f"Row stochastic trust_weights: {trust_weights}, Scale: {max(min((iter / 50), 1), 10)}")
     #trust_weights *= samples_size
     #trust_weights /= trust_weights.sum(dim=1)
+    print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
+    __weighted_average(clients, trust_weights)
+
+def __average_oracle(clients, samples_size) -> None:
+    trust_weights = torch.zeros((len(clients), len(clients)))
+    for idx1 in range(len(clients)):
+        for idx2 in range(len(clients)):
+            if (idx1 % 3) == (idx2 % 3):
+                trust_weights[idx1, idx2] = 1.
+            else:
+                trust_weights[idx1, idx2] = 0.
+
+    trust_weights /= (len(clients) // 3)
+    print(f"Trust_weights: {trust_weights}")
+    trust_weights *= samples_size
+    trust_weights /= trust_weights.sum(dim=1)
     print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
     __weighted_average(clients, trust_weights)
