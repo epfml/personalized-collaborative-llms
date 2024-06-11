@@ -68,7 +68,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
             elif extra_args.trust == 'fed-avg-ft':
                 __average(clients)
             elif extra_args.trust == 'weight-sim':
-                __average_dynamic(clients, torch.tensor(data['samples_size']))
+                __average_dynamic(clients, torch.tensor(data['samples_size']), itr[-1])
             else:
                 raise NotImplementedError(f"Trust method {extra_args.trust} not implemented")
 
@@ -180,16 +180,16 @@ def __clients_similarity(clients) -> Tensor:
     return trust_weight
 
 
-def __average_dynamic(clients, samples_size) -> None:
+def __average_dynamic(clients, samples_size, iter) -> None:
     trust_weights = __clients_similarity(clients)
     print(f"trust_weights: {trust_weights}")
     #trust_weights -= trust_weights.min(1, keepdim=True)[0]
     #trust_weights /= trust_weights.max(1, keepdim=True)[0]
     #trust_weights /= trust_weights.sum(dim=1)
-    trust_weights *= 10
+    trust_weights *= max(min((iter / 50), 1), 10)
     trust_weights = F.softmax(trust_weights, dim=1)
-    print(f"Row stochastic trust_weights: {trust_weights}")
-    #trust_weights /= samples_size
+    print(f"Row stochastic trust_weights: {trust_weights}, Scale: {max(min((iter / 50), 1), 10)}")
+    #trust_weights *= samples_size
     #trust_weights /= trust_weights.sum(dim=1)
     print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
     __weighted_average(clients, trust_weights)
