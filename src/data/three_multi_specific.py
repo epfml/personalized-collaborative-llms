@@ -11,7 +11,7 @@ MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/three_multi
 def get_three_multi_data_specific():
     # client's data distribution is fr, de, it, fr, de, it, ....
     # client's number of samples should be different
-    samples_size = [250000, 250000, 250000, 50000, 50000, 500000]
+    samples_size = [250000, 250000, 250000, 50000, 50000, 50000]
 
     if not os.path.exists(MULTI_DATA_PATH):
         os.makedirs(MULTI_DATA_PATH)
@@ -49,8 +49,8 @@ def get_three_multi_data_specific():
             start = (i // 3) * 1500  # 800000 tokens
             end = ((i // 3) + 1) * 1500
             traindata.append(traintext_perclass[i % 3][start:end])
-            start = (i // 3) * 1500  # 160000 tokens
-            end = ((i // 3) + 1) * 300
+            start = (i // 3) * 2000  # 160000 tokens
+            end = ((i // 3) + 1) * 2000
             testdata.append(testtext_perclass[i % 3][start:end])
 
         for i in range(num_clients):
