@@ -4,9 +4,9 @@ from contextlib import nullcontext
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import wandb
 from torch import Tensor
-import torch.nn.functional as F
 
 from .utils import eval, get_batch
 
@@ -67,7 +67,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
                 __average(clients)
             elif extra_args.trust == 'fed-avg-ft':
                 __average(clients)
-            elif extra_args.trust == 'val_sim':
+            elif extra_args.trust == 'val-sim':
                 res = torch.zeros((num_clients, num_clients))
                 for model, _, _ in clients:
                     model.eval()
@@ -166,6 +166,32 @@ def __weighted_average(clients, trust_weights) -> None:
     del weights
 
 
+def __weighted_average_noised(clients, trust_weights, noise) -> None:
+    wandb.log({'Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
+
+    weights = {}
+    for id, client in enumerate(clients):
+        for name, param in client[0].named_parameters():
+            if param.requires_grad:
+                if name in weights:
+                    weights[name][id] = param.data.clone()
+                else:
+                    weights[name] = {}
+                    weights[name][id] = param.data.clone()
+
+    for idx, client in enumerate(clients):
+        model, _, _ = client
+
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                val = torch.zeros_like(param)
+                for i in range(len(clients)):
+                    val += trust_weights[idx, i] * weights[name][i]
+                param.data = val
+
+    del weights
+
+
 def __average(clients) -> None:
     trust_weights = torch.zeros((len(clients), len(clients)))
     trust_weights = torch.fill(trust_weights, 1 / len(clients))
@@ -196,7 +222,8 @@ def __clients_similarity(clients) -> Tensor:
                 trust_weight[idx2, idx1] = score
     return trust_weight
 
-def __average_oracle(clients, samples_size) -> None:
+
+def __get_oracle(clients, samples_size):
     trust_weights = torch.zeros((len(clients), len(clients)))
     for idx1 in range(len(clients)):
         for idx2 in range(len(clients)):
@@ -210,23 +237,17 @@ def __average_oracle(clients, samples_size) -> None:
     trust_weights *= samples_size
     trust_weights /= trust_weights.sum(dim=1)
     print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
+    return trust_weights
+
+
+def __average_oracle(clients, samples_size) -> None:
+    trust_weights = __get_oracle(clients, samples_size)
     __weighted_average(clients, trust_weights)
+
 
 def __average_oracle_noised(clients, samples_size) -> None:
-    trust_weights = torch.zeros((len(clients), len(clients)))
-    for idx1 in range(len(clients)):
-        for idx2 in range(len(clients)):
-            if (idx1 % 3) == (idx2 % 3):
-                trust_weights[idx1, idx2] = 1.
-            else:
-                trust_weights[idx1, idx2] = 0.
-
-    trust_weights /= (len(clients) // 3)
-    print(f"Trust_weights: {trust_weights}")
-    trust_weights *= samples_size
-    trust_weights /= trust_weights.sum(dim=1)
-    print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
-    __weighted_average(clients, trust_weights)
+    trust_weights = __get_oracle(clients, samples_size)
+    __weighted_average_noised(clients, trust_weights)
 
 
 def __average_validation_set(clients, trust_weights) -> None:
