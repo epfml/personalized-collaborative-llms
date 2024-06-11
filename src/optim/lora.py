@@ -67,8 +67,21 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
                 __average(clients)
             elif extra_args.trust == 'fed-avg-ft':
                 __average(clients)
-            elif extra_args.trust == 'weight-sim':
-                __average_dynamic(clients, torch.tensor(data['samples_size']), itr[-1])
+            elif extra_args.trust == 'val_sim':
+                res = torch.zeros((num_clients, num_clients))
+                for model, _, _ in clients:
+                    model.eval()
+                for id1 in range(len(clients)):
+                    for id2, (model, _, _) in enumerate(clients):
+                        model.eval()
+                        _, _, val_perplexity = eval(model, data['val'][id1], sequence_length, batch_size,
+                                                    extra_args.device, max_num_batches=12, ctx=type_ctx)
+                        res[id1, id2] = val_perplexity
+                        model.train()
+                for model, _, _ in clients:
+                    model.train()
+                res = -res
+                __average_validation_set(clients, res)
             elif extra_args.trust == 'oracle':
                 __average_oracle(clients, torch.tensor(data['samples_size']))
             elif extra_args.trust == 'oracle-1':
@@ -183,21 +196,6 @@ def __clients_similarity(clients) -> Tensor:
                 trust_weight[idx2, idx1] = score
     return trust_weight
 
-
-def __average_dynamic(clients, samples_size, iter) -> None:
-    trust_weights = __clients_similarity(clients)
-    print(f"trust_weights: {trust_weights}")
-    #trust_weights -= trust_weights.min(1, keepdim=True)[0]
-    #trust_weights /= trust_weights.max(1, keepdim=True)[0]
-    #trust_weights /= trust_weights.sum(dim=1)
-    trust_weights *= max(min((iter / 50), 1), 10)
-    trust_weights = F.softmax(trust_weights, dim=1)
-    print(f"Row stochastic trust_weights: {trust_weights}, Scale: {max(min((iter / 50), 1), 10)}")
-    #trust_weights *= samples_size
-    #trust_weights /= trust_weights.sum(dim=1)
-    print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
-    __weighted_average(clients, trust_weights)
-
 def __average_oracle(clients, samples_size) -> None:
     trust_weights = torch.zeros((len(clients), len(clients)))
     for idx1 in range(len(clients)):
@@ -212,4 +210,25 @@ def __average_oracle(clients, samples_size) -> None:
     trust_weights *= samples_size
     trust_weights /= trust_weights.sum(dim=1)
     print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
+    __weighted_average(clients, trust_weights)
+
+def __average_oracle_noised(clients, samples_size) -> None:
+    trust_weights = torch.zeros((len(clients), len(clients)))
+    for idx1 in range(len(clients)):
+        for idx2 in range(len(clients)):
+            if (idx1 % 3) == (idx2 % 3):
+                trust_weights[idx1, idx2] = 1.
+            else:
+                trust_weights[idx1, idx2] = 0.
+
+    trust_weights /= (len(clients) // 3)
+    print(f"Trust_weights: {trust_weights}")
+    trust_weights *= samples_size
+    trust_weights /= trust_weights.sum(dim=1)
+    print(f"Row stochastic trust_weights, scaled by samples size: {trust_weights}")
+    __weighted_average(clients, trust_weights)
+
+
+def __average_validation_set(clients, trust_weights) -> None:
+    trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
