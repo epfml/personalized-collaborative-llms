@@ -181,7 +181,7 @@ def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
     print(f"Probability of permutations: {prob}")
 
     for idx in range(len(clients)):
-        if np.random.random < prob[idx].item():
+        if np.random.random() < prob[idx].item():
             perm = torch.randperm(len(clients))
             perm[perm == idx] = perm[idx]
             perm[idx] = idx
