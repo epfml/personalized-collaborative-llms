@@ -178,8 +178,10 @@ def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
     vals[1, 1:] = vals[1, :].cumsum(dim=0)[:-1]
     vals[1, 0] = 0.
     prob = vals[:, indices][1, :]
+    torch.set_printoptions(precision=3, sci_mode=False)
     print(f"C: {C}")
     print(f"Probability of permutations: {prob}")
+    torch.set_printoptions(profile="default")
 
     for idx in range(len(clients)):
         if np.random.random() < prob[idx].item():
