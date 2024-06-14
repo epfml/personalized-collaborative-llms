@@ -183,6 +183,7 @@ def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
     print(f"C: \n{C}")
     print(f"Probability of permutations: \n{prob}")
 
+    print(f"Trust weights before permuted: \n{trust_weights}")
 
     for idx in range(len(clients)):
         if np.random.random() < prob[idx].item():
