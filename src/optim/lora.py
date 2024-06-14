@@ -36,6 +36,8 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
     for i in range(num_clients):
         clients[i][0].train()
 
+    ft_iter = int(iterations * 0.8)
+
     t0 = time.time()
     while itr[-1] < iterations:
         for i in range(num_clients):
@@ -43,7 +45,10 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
             model, opt, scheduler = clients[i]
 
             for microstep_idx in range(acc_steps):  # gradient accumulation
-                x, y = get_batch(data['train'][i], sequence_length, batch_size, device=extra_args.device)
+                if itr[-1] > ft_iter:
+                    x, y = get_batch(data['ft'][i], sequence_length, batch_size, device=extra_args.device)
+                else:
+                    x, y = get_batch(data['train'][i], sequence_length, batch_size, device=extra_args.device)
                 with type_ctx:
                     with distributed_backend.get_context_for_microstep_forward(model=model, microstep_idx=microstep_idx,
                                                                                gradient_accumulation_steps=acc_steps):
@@ -60,7 +65,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
             itr[i] += 1
 
         # distribute gradient
-        if itr[-1] % extra_args.trust_freq == 0 and itr[-1] >= extra_args.pretraining_rounds - 1:
+        if itr[-1] % extra_args.trust_freq == 0 and extra_args.pretraining_rounds - 1 <= itr[-1] <= ft_iter:
             if extra_args.trust == 'local':
                 pass
             elif extra_args.trust == 'fed-avg':

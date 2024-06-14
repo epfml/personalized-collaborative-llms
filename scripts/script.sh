@@ -14,7 +14,7 @@ seed_lim=$5
 for ((seed = 1; seed <= seed_lim; seed++)); do
     echo "---------------- New sample with seed: $seed ----------------"
 
-    python -W ignore ./src/main.py --seed $seed --trust $trust --wandb_project "$wandb_project" --wandb_group "$trust" --trust_freq 25 --pretraining_rounds 26 --iterations 5000 --num_clients $num_clients --eval_freq 25 --dataset $dataset_name --wandb --config_format lora --use_pretrained gpt2 --lora_causal_self_attention --lora_freeze_all_non_lora
+    python -W ignore ./src/main.py --seed $seed --trust $trust --wandb_project "$wandb_project" --wandb_group "$trust" --trust_freq 25 --pretraining_rounds 25 --iterations 1000 --num_clients $num_clients --eval_freq 1 --dataset $dataset_name --wandb --config_format lora --use_pretrained gpt2 --lora_causal_self_attention --lora_freeze_all_non_lora
 done
 
 
