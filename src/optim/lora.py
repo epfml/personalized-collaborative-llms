@@ -172,10 +172,23 @@ def __weighted_average(clients, trust_weights) -> None:
 
 
 def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
-    wandb.log({'Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
+    C = torch.concatenate([(1 - C).unsqueeze(-1), samples_size.unsqueeze(-1)], dim=0)
+    vals, indices = C.unique(sorted=True, return_inverse=True, dim=1)
+    vals[1, :] /= vals[1, :].sum()
+    vals[1, 1:] = vals[1, :-1]
+    vals[1, 0] = 0.
+    prob = vals[:, indices][1, :]
+    print(f"Probability of permutations: {prob}")
 
-    noise = (1 - C) * (1 / torch.sqrt(samples_size)) * torch.tensor(np.random.normal(0, 1, size=(C.size(0))).tolist())
-    print(f"noise: {noise}")
+    for idx in range(len(clients)):
+        if np.random.random < prob[idx]:
+            perm = torch.randperm(len(clients))
+            perm[perm == idx] = perm[idx]
+            perm[idx] = idx
+            trust_weights[idx, :] = trust_weights[idx, perm]
+
+    print(f"Trust weights permuted: {trust_weights}")
+    wandb.log({'Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
 
     weights = {}
     for id, client in enumerate(clients):
@@ -194,8 +207,8 @@ def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
             if param.requires_grad:
                 val = torch.zeros_like(param)
                 for i in range(len(clients)):
-                    val += (trust_weights[idx, i] + noise[idx]) * weights[name][i]
-                param.data = val + noise[idx]
+                    val += trust_weights[idx, i] * weights[name][i]
+                param.data = val
 
     del weights
 
@@ -267,6 +280,7 @@ def __average_oracle_noised(clients, samples_size) -> None:
 def __average_validation_set(clients, trust_weights) -> None:
     trust_weights = F.softmax(trust_weights, dim=1)
     __weighted_average(clients, trust_weights)
+
 
 def __average_validation_set_noise(clients, trust_weights, samples_size) -> None:
     trust_weights = F.softmax(trust_weights, dim=1)
