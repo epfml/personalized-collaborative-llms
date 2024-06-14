@@ -177,11 +177,12 @@ def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
     vals[1, :] /= vals[1, :].sum()
     vals[1, 1:] = vals[1, :].cumsum(dim=0)[:-1]
     vals[1, 0] = 0.
+    vals[1, :] *= vals[0, :]
     prob = vals[:, indices][1, :]
     torch.set_printoptions(precision=3, sci_mode=False)
-    print(f"C: {C}")
-    print(f"Probability of permutations: {prob}")
-    torch.set_printoptions(profile="default")
+    print(f"C: \n{C}")
+    print(f"Probability of permutations: \n{prob}")
+
 
     for idx in range(len(clients)):
         if np.random.random() < prob[idx].item():
@@ -190,7 +191,8 @@ def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
             perm[idx] = idx
             trust_weights[idx, :] = trust_weights[idx, perm]
 
-    print(f"Trust weights permuted: {trust_weights}")
+    print(f"Trust weights permuted: \n{trust_weights}")
+    torch.set_printoptions(profile="default")
     wandb.log({'Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
 
     weights = {}
