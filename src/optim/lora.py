@@ -173,10 +173,13 @@ def __weighted_average(clients, trust_weights) -> None:
 
 def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
     C = torch.concatenate([(1 - C).unsqueeze(-1), samples_size.unsqueeze(-1)], dim=0)
+    print(f"C: {C.size()}, {C}")
     vals, indices = C.unique(sorted=True, return_inverse=True, dim=1)
     vals[1, :] /= vals[1, :].sum()
     vals[1, 1:] = vals[1, :-1]
     vals[1, 0] = 0.
+    print(f"vals: {vals}")
+    print(f"vals indices: {vals[:, indices]}")
     prob = vals[:, indices][1, :]
     print(f"Probability of permutations: {prob}")
 
