@@ -172,7 +172,7 @@ def __weighted_average(clients, trust_weights) -> None:
 
 
 def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
-    C = torch.concatenate([(1 - C).unsqueeze(-1), samples_size.unsqueeze(-1)], dim=0)
+    C = torch.concatenate([(1 - C).unsqueeze(-1), samples_size.unsqueeze(-1)], dim=1)
     print(f"C: {C.size()}, {C}")
     vals, indices = C.unique(sorted=True, return_inverse=True, dim=1)
     vals[1, :] /= vals[1, :].sum()
