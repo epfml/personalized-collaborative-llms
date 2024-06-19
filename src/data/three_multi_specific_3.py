@@ -8,7 +8,7 @@ num_clients = 12
 MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/three_multi_specific/{num_clients}/")
 
 
-def get_three_multi_data_specific():
+def get_three_multi_data_specific_3():
     # client's data distribution is fr, de, it, fr, de, it, ....
     # client's number of samples should be different
     samples_size = [2000000, 2000000, 2000000, 1000000, 1000000, 1000000, 500000, 500000, 500000, 100000, 100000, 100000]
