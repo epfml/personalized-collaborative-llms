@@ -3,7 +3,9 @@ from typing import Dict
 import numpy as np
 
 from .agnews_specific import get_agnews_specific_data
-from .three_multi_specific import get_three_multi_data_specific
+from .three_multi_specific_1 import get_three_multi_data_specific_1
+from .three_multi_specific_2 import get_three_multi_data_specific_2
+from .three_multi_specific_3 import get_three_multi_data_specific_3
 from .wikitext import get_wikitext_data
 
 
@@ -15,7 +17,11 @@ def get_dataset(args) -> Dict[str, np.ndarray]:
         return get_wikitext_data()
     if args.dataset == 'agnews_specific':
         return get_agnews_specific_data()
-    if args.dataset == 'three_multi_specific':
-        return get_three_multi_data_specific()
+    if args.dataset == 'three_multi_specific_1':
+        return get_three_multi_data_specific_1()
+    if args.dataset == 'three_multi_specific_3':
+        return get_three_multi_data_specific_2()
+    if args.dataset == 'three_multi_specific_2':
+        return get_three_multi_data_specific_3()
     else:
         raise NotImplementedError(f"Unknown dataset key '{args.dataset}'")

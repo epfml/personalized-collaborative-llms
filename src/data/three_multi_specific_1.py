@@ -4,14 +4,14 @@ import numpy as np
 import tiktoken
 from datasets import load_from_disk, load_dataset
 
-num_clients = 9
+num_clients = 6
 MULTI_DATA_PATH = os.path.join(os.path.dirname(__file__), f"datasets/three_multi_specific/{num_clients}/")
 
 
 def get_three_multi_data_specific():
     # client's data distribution is fr, de, it, fr, de, it, ....
     # client's number of samples should be different
-    samples_size = [500000, 500000, 500000, 250000, 250000, 250000, 50000, 50000, 50000]
+    samples_size = [1000000, 1000000, 1000000, 250000, 250000, 250000]
 
     if not os.path.exists(MULTI_DATA_PATH):
         os.makedirs(MULTI_DATA_PATH)

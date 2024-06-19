@@ -23,7 +23,8 @@ def parse_args(base_parser, args, namespace):
     parser.add_argument('--grad_clip', default=0.0, type=float)  # default value is 1.0 in NanoGPT
     # Dataset params
     parser.add_argument('--dataset', required=True, type=str,
-                        choices=['wikitext', 'three_multi_specific'])
+                        choices=['wikitext', 'three_multi_specific_1', 'three_multi_specific_2',
+                                 'three_multi_specific_3'])
     parser.add_argument('--vocab_size', default=50304, type=int)
     # Model params
     parser.add_argument('--model', default='lora', choices=['lora'])

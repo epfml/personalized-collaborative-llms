@@ -36,7 +36,7 @@ def train_lora(clients, data, iterations, acc_steps, batch_size, sequence_length
     for i in range(num_clients):
         clients[i][0].train()
 
-    ft_iter = int(iterations * 0.8)
+    ft_iter = iterations + 1
 
     t0 = time.time()
     while itr[-1] < iterations:
@@ -186,10 +186,11 @@ def __weighted_average_noised(clients, trust_weights, C, samples_size) -> None:
     prob = vals[:, indices][1, :]
     torch.set_printoptions(precision=3, sci_mode=False)
     print(f"C: \n{C}")
+    wandb.log({'Contribution Vector': json.dumps(np.array(C).tolist())}, commit=False)
     print(f"Probability of permutations: \n{prob}")
 
     print(f"Trust weights before permuted: \n{trust_weights}")
-
+    wandb.log({'Before Perm Trust weights': json.dumps(np.array(trust_weights).tolist())}, commit=False)
     for idx in range(len(clients)):
         if np.random.random() < prob[idx].item():
             perm = torch.randperm(len(clients))
