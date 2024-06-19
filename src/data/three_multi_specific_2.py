@@ -72,7 +72,7 @@ def get_three_multi_data_specific_2():
             eval_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
 
         del traindata, testdata
-        del traintext, testtext, raw_tokenized_eval, raw_tokenized_train, train_tokenized, eval_tokenized, ft_tokenized, raw_tokenized_ft
+        del traintext, testtext, raw_tokenized_eval, raw_tokenized_train, train_tokenized, eval_tokenized
         print("completed the tokenization process!")
 
     train_data = []
