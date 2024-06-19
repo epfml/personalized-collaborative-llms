@@ -46,8 +46,8 @@ def get_three_multi_data_specific():
         traindata = []
         testdata = []
         for i in range(num_clients):
-            start = (i // 3) * 1500  # 800000 tokens
-            end = ((i // 3) + 1) * 1500
+            start = (i // 3) * 3000  # 800000 tokens
+            end = ((i // 3) + 1) * 3000
             traindata.append(traintext_perclass[i % 3][start:end])
             start = (i // 3) * 2000  # 160000 tokens
             end = ((i // 3) + 1) * 2000
@@ -58,17 +58,17 @@ def get_three_multi_data_specific():
             testtext = ' '.join(testdata[i])
             tmp = tokenizer.encode_ordinary(traintext)
             raw_tokenized_train = tmp[:samples_size[i]]
-            raw_tokenized_ft = tmp[samples_size[i]: samples_size[i] + int(0.1 * samples_size[i])]
+            #raw_tokenized_ft = tmp[samples_size[i]: samples_size[i] + int(0.1 * samples_size[i])]
             raw_tokenized_eval = tokenizer.encode_ordinary(testtext)[:1000000]
 
             train_tokenized = np.array(raw_tokenized_train, dtype=np.uint16)
-            ft_tokenized = np.array(raw_tokenized_ft, dtype=np.uint16)
+            #ft_tokenized = np.array(raw_tokenized_ft, dtype=np.uint16)
             eval_tokenized = np.array(raw_tokenized_eval, dtype=np.uint16)
 
-            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval, {ft_tokenized.shape} ft')
+            print(f'{i}: {train_tokenized.shape} train, {eval_tokenized.shape} eval')
 
             train_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'))
-            ft_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'))
+            #ft_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'))
             eval_tokenized.tofile(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'))
 
         del traindata, testdata
@@ -77,11 +77,11 @@ def get_three_multi_data_specific():
 
     train_data = []
     val_data = []
-    ft_data = []
+    #ft_data = []
 
     for i in range(num_clients):
         train_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'train_{i}.bin'), dtype=np.uint16, mode='r'))
         val_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'val_{i}.bin'), dtype=np.uint16, mode='r'))
-        ft_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'), dtype=np.uint16, mode='r'))
+        #ft_data.append(np.memmap(os.path.join(MULTI_DATA_PATH, f'ft_{i}.bin'), dtype=np.uint16, mode='r'))
 
-    return {'train': train_data, 'val': val_data, 'ft': ft_data, 'samples_size': samples_size}
+    return {'train': train_data, 'val': val_data, 'samples_size': samples_size}
