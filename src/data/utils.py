@@ -19,9 +19,9 @@ def get_dataset(args) -> Dict[str, np.ndarray]:
         return get_agnews_specific_data()
     if args.dataset == 'three_multi_specific_1':
         return get_three_multi_data_specific_1()
-    if args.dataset == 'three_multi_specific_3':
-        return get_three_multi_data_specific_2()
     if args.dataset == 'three_multi_specific_2':
+        return get_three_multi_data_specific_2()
+    if args.dataset == 'three_multi_specific_3':
         return get_three_multi_data_specific_3()
     else:
         raise NotImplementedError(f"Unknown dataset key '{args.dataset}'")
