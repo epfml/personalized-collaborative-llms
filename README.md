@@ -43,9 +43,9 @@ To reproduce the experiments you can run the following commands. There are sever
    - "none": only local training
    - "naive": using weights 1/N
    - "static": using theoretical fixed weights as described in the paper
-   - "dynamic": using weights computed by similarity between models
-   - "dynamic-ref": using weights computed by using the validation scores
-   - "dynamic-token": using weights computed by comparing predictions of models
+   - "dynamic": our strategy 1, based on weight similarity
+   - "dynamic-ref": our strategy 2, based on validation performance
+   - "dynamic-token": our strategy 3, based on prediction similarity 
 
 #### General script
 
